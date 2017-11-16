@@ -34,6 +34,19 @@ class UnityEnvWrapper(Environment):
 
         self._default_brain = self._env.brain_names[0]
 
+        brain_info = self._env.reset()[self._default_brain]
+
+        self._action_space_info = Environment.ActionSpaceInfo(
+            size=brain_info.action_space_size,
+            type=brain_info.action_space_type,
+            descriptions=brain_info.action_descriptions
+        )
+
+        self._state_space_info = Environment.StateSpaceInfo(
+            size=brain_info.state_space_size,
+            type=brain_info.state_space_type
+        )
+
     @doc_inherit
     def reset(self, train_mode=True, context=None):
         brain_info = self._env.reset(train_mode=train_mode)[
