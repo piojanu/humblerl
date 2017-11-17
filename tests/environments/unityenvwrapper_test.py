@@ -32,9 +32,7 @@ class MockUnityEnvironment(object):
             self.state_space_size = MockUnityEnvironment._MOCK_STATE_SIZE
             self.state_space_type = MockUnityEnvironment._MOCK_STATE_TYPE
 
-    def __init__(self, file_name):
-        self._file_name = file_name
-
+    def __init__(self):
         self.brain_names = self._BRAIN_NAMES
 
     def reset(self, train_mode=True):
@@ -47,38 +45,19 @@ class MockUnityEnvironment(object):
 
 
 class TestUnityEnvWrapperInit(object):
-    def test_init_unityenvwrapper_with_path(self):
-        FILE_NAME = "./test"
-
-        env = UnityEnvWrapper(file_name=FILE_NAME,
-                              UnityEnvironmentType=MockUnityEnvironment)
-
-        assert env._env._file_name == FILE_NAME
-        assert env._default_brain == MockUnityEnvironment._BRAIN_NAMES[0]
-
-    def test_init_unityenvwrapper_with_unityenv(self):
-        MOCK_ENV = MockUnityEnvironment(None)
+    def test_init_unityenvwrapper(self):
+        MOCK_ENV = MockUnityEnvironment()
 
         env = UnityEnvWrapper(unity_env=MOCK_ENV)
 
         assert env._env is MOCK_ENV
         assert env._default_brain == MockUnityEnvironment._BRAIN_NAMES[0]
 
-    @pytest.fixture(params=[{"file_name": None, "unity_env": None},
-                            {"file_name": "test", "unity_env": MockUnityEnvironment(None)}])
-    def illegall_init_params(self, request):
-        return request.param
-
-    def test_illegally_init_unityenvwrapper(self, illegall_init_params):
-        with pytest.raises(ValueError):
-            UnityEnvWrapper(file_name=illegall_init_params["file_name"],
-                            unity_env=illegall_init_params["unity_env"])
-
 
 class TestUnityEnvWrapperRun(object):
     @pytest.fixture()
     def unityenvwrapper(self):
-        return UnityEnvWrapper(unity_env=MockUnityEnvironment(None))
+        return UnityEnvWrapper(unity_env=MockUnityEnvironment())
 
     def test_reset(self, unityenvwrapper):
         TRAIN_MODE = False
@@ -102,7 +81,7 @@ class TestUnityEnvWrapperRun(object):
 class TestUnityEnvWrapperSpaces(object):
     @pytest.fixture()
     def unityenvwrapper(self):
-        return UnityEnvWrapper(unity_env=MockUnityEnvironment(None))
+        return UnityEnvWrapper(unity_env=MockUnityEnvironment())
 
     def test_action_space_info(self, unityenvwrapper):
         assert unityenvwrapper.action_space_info.size == \
