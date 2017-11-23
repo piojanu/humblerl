@@ -23,17 +23,17 @@ class UnityEnvWrapper(Environment):
         self._env = unity_env
         self._default_brain = self._env.brain_names[0]
 
-        brain_info = self._env.reset()[self._default_brain]
+        brain_parameters = self._env.brains[self._default_brain]
 
         self._action_space_info = Environment.ActionSpaceInfo(
-            size=brain_info.action_space_size,
-            type=brain_info.action_space_type,
-            descriptions=brain_info.action_descriptions
+            size=brain_parameters.action_space_size,
+            type=brain_parameters.action_space_type,
+            descriptions=brain_parameters.action_descriptions
         )
 
         self._state_space_info = Environment.StateSpaceInfo(
-            size=brain_info.state_space_size,
-            type=brain_info.state_space_type
+            size=brain_parameters.state_space_size,
+            type=brain_parameters.state_space_type
         )
 
     @doc_inherit

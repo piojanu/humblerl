@@ -25,6 +25,9 @@ class MockUnityEnvironment(object):
             self.rewards = (MockUnityEnvironment._MOCK_REWARD, )
             self.local_done = (MockUnityEnvironment._MOCK_DONE, )
 
+    class _BrainParameters:
+
+        def __init__(self):
             self.action_space_size = MockUnityEnvironment._MOCK_ACTION_SIZE
             self.action_space_type = MockUnityEnvironment._MOCK_ACTION_TYPE
             self.action_descriptions = MockUnityEnvironment._MOCK_ACTION_DESCRIPTIONS
@@ -34,6 +37,7 @@ class MockUnityEnvironment(object):
 
     def __init__(self):
         self.brain_names = self._BRAIN_NAMES
+        self.brains = {self.brain_names[0]: self._BrainParameters(), }
 
     def reset(self, train_mode=True):
         self._train_mode = train_mode
