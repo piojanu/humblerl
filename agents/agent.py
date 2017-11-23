@@ -42,6 +42,11 @@ class Agent(object):
         self._cur_state = None
 
     @property
+    def environment(self):
+        """Access environment."""
+        return self._env
+
+    @property
     def policy(self):
         """Access current policy."""
         return self._cur_policy
