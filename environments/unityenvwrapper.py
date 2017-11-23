@@ -11,16 +11,13 @@ class UnityEnvWrapper(Environment):
     It supports only single agent environments.
     """
 
-    def __init__(self, unity_env=None):
+    def __init__(self, unity_env):
         """Initialize UnityEnvWrapper.
 
-        Initialize UnityEnvWrapper with injected UnityEnvironment or create new
-        UnityEnvironment based on path in file_name parameter.
+        Initialize UnityEnvWrapper with injected UnityEnvironment.
 
         Args:
-            file_name (string): Path to Unity3D environment. (default: None)
-            unity_env (UnityEnvironment): Unity environment. (default: None)
-            UnityEnvironmentType (UnityEnvironment): Enables dependency injection.
+            unity_env (UnityEnvironment): Unity environment to wrap.
         """
 
         self._env = unity_env
