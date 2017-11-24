@@ -1,5 +1,9 @@
 from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
+
+from humblerl.environments import Transition
+
+
 class Vision(object):
     """Vision system entity in Reinforcement Learning task."""
 
@@ -9,10 +13,10 @@ class Vision(object):
         Args:
             state_processor (function): Function for state processing. It should
         take raw environment state as an input and return processed state.
-        Default: None which will result in passing raw state.
+        [Default: None which will result in passing raw state]
             reward_processor (function): Function for reward processing. It should
         take raw environment reward as an input and return processed reward.
-        Default: None which will result in passing raw reward.
+        [Default: None which will result in passing raw reward]
         """
 
         self._process_state = \
@@ -34,7 +38,7 @@ class Agent(object):
             env (humblerl.environments.Environment): Any environment implementing
         HumbleRL Environment interface.
             vision (humblerl.agents.Vision): Processes raw environment output
-        before passing it to the agent. Default: humblerl.agents.Vision().
+        before passing it to the agent. [Default: humblerl.agents.Vision()]
         """
 
         self._env = env
@@ -63,7 +67,7 @@ class Agent(object):
 
         Args:
             train_mode (bool): Informs environment if it's training or evaluation
-        mode. E.g. in train mode graphics could not be rendered. (default: True)
+        mode. E.g. in train mode graphics could not be rendered. [Default: True]
 
         Returns:
             np.array: The initial state. 
@@ -83,17 +87,15 @@ class Agent(object):
 
         Args:
             policy (function): Function that takes state/observation and return
-        action (list of floats) to take in the environment. In discrete action
-        space it's single element list with action number.
+        action (list of floats) to take in the environment and user info.
+        In discrete action space it's single element list with action number.
         If None, previous policy will be used (it's called current policy).
-        Default: None.
+        [Default: None]
 
         Returns:
-            list of floats: Action taken. In discrete action space it's single
-        element list with action number.
-            np.array: Next state.
-            float: Next reward.
-            bool: Flag indicating if episode has ended.
+            transition (environments.Transition): Transition packed in namedtuple: 
+        state, action, reward, next_state, is_terminal.
+            info (...): User defined object, returned from policy.
         """
 
         # Assign policy
@@ -108,11 +110,21 @@ class Agent(object):
             raise ValueError("You need to provide agent policy!")
 
         # Take a step
-        action = self._cur_policy(self._cur_state)
+        action, info = self._cur_policy(self._cur_state)
         raw_state, raw_reward, done = self._env.step(action=action)
 
         # Process raw state and reward
         state, reward = self._vision(raw_state, raw_reward)
+
+        # Collect transition
+        transition = Transition(
+            state=self._cur_state,
+            action=action,
+            reward=reward,
+            next_state=state,
+            is_terminal=done
+        )
+
         self._cur_state = state
 
-        return action, state, reward, done
+        return transition, info

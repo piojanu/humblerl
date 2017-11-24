@@ -3,6 +3,9 @@ from __future__ import (absolute_import, division,
 
 from collections import namedtuple
 
+Transition = namedtuple(
+    "Transition", ["state", "action", "reward", "next_state", "is_terminal"])
+
 
 class Environment(object):
     """Interface for environments."""

@@ -36,12 +36,17 @@ class TestVision(object):
 class TestAgent(object):
     _MOCK_INIT_STATE = [1, 2, 3]
     _MOCK_ACTION = [7., ]
+    _MOCK_INFO = "Dupa22"
     _MOCK_NEXT_STATE = [4, 5, 6]
     _MOCK_REWARD = 7.
     _MOCK_DONE = True
 
     _MOCK_VISION_STATE = [7, 8, 9]
     _MOCK_VISION_REWARD = 9.
+
+    @staticmethod
+    def mock_policy(x):
+        return (TestAgent._MOCK_ACTION, TestAgent._MOCK_INFO)
 
     @pytest.fixture
     def agent_mock_env(self):
@@ -77,19 +82,20 @@ class TestAgent(object):
         env.reset.assert_called_with(train_mode=False)
 
     def test_step(self, agent_mock_env):
-        def policy(x): return self._MOCK_ACTION
         agent, env = agent_mock_env
 
         agent.reset()
-        action, state, reward, done = agent.step(
-            policy=policy
+        transition, info = agent.step(
+            policy=self.mock_policy
         )
 
-        assert action == self._MOCK_ACTION
-        assert state == self._MOCK_NEXT_STATE
-        assert reward == self._MOCK_REWARD
-        assert done == self._MOCK_DONE
-        assert agent._cur_policy == policy
+        assert info == self._MOCK_INFO
+        assert transition.state == self._MOCK_INIT_STATE
+        assert transition.action == self._MOCK_ACTION
+        assert transition.reward == self._MOCK_REWARD
+        assert transition.next_state == self._MOCK_NEXT_STATE
+        assert transition.is_terminal == self._MOCK_DONE
+        assert agent._cur_policy == self.mock_policy
         env.step.assert_called_with(action=self._MOCK_ACTION)
 
     def test_step_without_policy(self, agent_mock_env):
@@ -117,18 +123,19 @@ class TestAgent(object):
         vision.assert_called_with(self._MOCK_INIT_STATE, 0)
 
     def test_vision_step(self, agent_mock_env_and_vision):
-        def policy(x): return self._MOCK_ACTION
         agent, env, vision = agent_mock_env_and_vision
 
         agent.reset()
-        action, state, reward, done = agent.step(
-            policy=policy
+        transition, info = agent.step(
+            policy=self.mock_policy
         )
 
-        assert action == self._MOCK_ACTION
-        assert state == self._MOCK_VISION_STATE
-        assert reward == self._MOCK_VISION_REWARD
-        assert done == self._MOCK_DONE
-        assert agent._cur_policy == policy
+        assert info == self._MOCK_INFO
+        assert transition.state == self._MOCK_VISION_STATE
+        assert transition.action == self._MOCK_ACTION
+        assert transition.reward == self._MOCK_VISION_REWARD
+        assert transition.next_state == self._MOCK_VISION_STATE
+        assert transition.is_terminal == self._MOCK_DONE
+        assert agent._cur_policy == self.mock_policy
         env.step.assert_called_with(action=self._MOCK_ACTION)
         vision.assert_called_with(self._MOCK_NEXT_STATE, self._MOCK_REWARD)
