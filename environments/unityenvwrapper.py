@@ -37,13 +37,13 @@ class UnityEnvWrapper(Environment):
         )
 
     @doc_inherit
-    def reset(self, train_mode=True, context=None):
+    def reset(self, train_mode=True):
         brain_info = self._env.reset(train_mode=train_mode)[
             self._default_brain]
         return brain_info.states[0]
 
     @doc_inherit
-    def step(self, action, context=None):
+    def step(self, action):
         assert action is not None
 
         # Take brain info of first (default) brain
