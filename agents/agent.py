@@ -128,3 +128,26 @@ class Agent(object):
         self._cur_state = state
 
         return transition, info
+
+    def run(self, max_steps=-1):
+        """Play agent in environment, take steps as Python generator.
+
+        Args:
+            max_steps (int): Play until env is done or max_steps is reached.
+        If -1, then play until env is done. [Default: -1]
+
+        Returns:
+            transition (environments.Transition): Transition packed in namedtuple: 
+        state, action, reward, next_state, is_terminal.
+            info (...): User defined object, returned from policy.
+        """
+
+        stop = False
+        step = 0
+
+        while not stop and (max_steps == -1 or step < max_steps):
+            transition, info = self.step()
+            stop = transition.is_terminal
+
+            yield transition, info
+            step += 1

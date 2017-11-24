@@ -39,7 +39,7 @@ class TestAgent(object):
     _MOCK_INFO = "Dupa22"
     _MOCK_NEXT_STATE = [4, 5, 6]
     _MOCK_REWARD = 7.
-    _MOCK_DONE = True
+    _MOCK_DONE = False
 
     _MOCK_VISION_STATE = [7, 8, 9]
     _MOCK_VISION_REWARD = 9.
@@ -97,6 +97,56 @@ class TestAgent(object):
         assert transition.is_terminal == self._MOCK_DONE
         assert agent._cur_policy == self.mock_policy
         env.step.assert_called_with(action=self._MOCK_ACTION)
+
+    def test_run(self, agent_mock_env):
+        agent, env = agent_mock_env
+
+        agent.reset()
+        agent.policy = self.mock_policy
+
+        stop = 3
+        step = 0
+
+        for transition, info in agent.run(stop):
+            assert info == self._MOCK_INFO
+            assert (transition.state == self._MOCK_INIT_STATE or
+                    transition.state == self._MOCK_NEXT_STATE)
+            assert transition.action == self._MOCK_ACTION
+            assert transition.reward == self._MOCK_REWARD
+            assert transition.next_state == self._MOCK_NEXT_STATE
+            assert transition.is_terminal == self._MOCK_DONE
+            assert agent._cur_policy == self.mock_policy
+            env.step.assert_called_with(action=self._MOCK_ACTION)
+
+            step += 1
+
+        assert step == stop
+
+    def test_run_early_stop(self, mocker, agent_mock_env):
+        agent, env = agent_mock_env
+        env.step.return_value = (self._MOCK_NEXT_STATE,
+                                 self._MOCK_REWARD,
+                                 True)
+
+        agent.reset()
+        agent.policy = self.mock_policy
+
+        stop = 3
+        step = 0
+
+        for transition, info in agent.run(stop):
+            assert info == self._MOCK_INFO
+            assert transition.state == self._MOCK_INIT_STATE
+            assert transition.action == self._MOCK_ACTION
+            assert transition.reward == self._MOCK_REWARD
+            assert transition.next_state == self._MOCK_NEXT_STATE
+            assert transition.is_terminal == True
+            assert agent._cur_policy == self.mock_policy
+            env.step.assert_called_with(action=self._MOCK_ACTION)
+
+            step += 1
+
+        assert step == 1
 
     def test_step_without_policy(self, agent_mock_env):
         agent, env = agent_mock_env
