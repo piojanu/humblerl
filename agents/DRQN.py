@@ -1,6 +1,7 @@
 from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
 
+import numpy as np
 import random
 
 from humblerl.environments import Transition
@@ -77,7 +78,7 @@ class EpisodicMemory(object):
             batch_size (int): Size of a batch.
 
         Returns:
-            list: Batch of transitions, shape: [batch_size, trace_length, 4] or
+            np.array: Shape (sequence, batch, Transition as list) or
         None if no finished episode.
         """
 
@@ -97,9 +98,9 @@ class EpisodicMemory(object):
 
             # Check if we have enough transition to sample a full trace.
             if len(self._episode_buffer[episode_idx]) // 3 > self._trace_length:
-                raise ValueError("Trace length is too big! Episode {} \
-                                 has only {} transitions.".format(
-                    episode_idx, len(self._episode_buffer[episode_idx])))
+                raise ValueError(
+                    "Trace length is too big! Episode {} has only {} transitions."
+                    .format(episode_idx, len(self._episode_buffer[episode_idx])))
 
             # Each trace consist of 3 items, so episode buffer length divided
             # by 3 will give traces number.
@@ -124,4 +125,4 @@ class EpisodicMemory(object):
         # Transpose batch to (sequence, batch, Transition) shape.
         sequence = list(map(list, zip(*batch)))
 
-        return sequence
+        return np.array(sequence)
