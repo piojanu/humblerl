@@ -31,13 +31,29 @@ class TestEpisodicMemory(object):
     @pytest.fixture
     def episodicmemory(self):
         episodicmemory = EpisodicMemory(
-            buffer_size=100,
+            buffer_size=10,
             trace_length=8,
             seed=123)
 
         return episodicmemory
 
     def test_store(self, episodicmemory, transition):
+        episodicmemory.store(transition)
+
+        assert episodicmemory._episode_buffer[0] == \
+            self.transition_to_list(transition)
+
+    def test_stress_store(self, episodicmemory):
+        transition = self.transition_fabric(is_terminal=True)
+
+        # Make up buffer to the full
+        for i in range(episodicmemory._buffer_size):
+            episodicmemory.store(transition)
+            assert episodicmemory._episode_buffer[i] == \
+                self.transition_to_list(transition)
+
+        # Add one more transition and check if it's at the beginning
+        transition = self.transition_fabric(state=["dupa", ], is_terminal=True)
         episodicmemory.store(transition)
 
         assert episodicmemory._episode_buffer[0] == \

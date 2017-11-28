@@ -63,9 +63,12 @@ class EpisodicMemory(object):
             assert self._episode_idx <= len(self._episode_buffer), \
                 "Illegal episode buffer index!"
 
-            # Append empty list if there isn't enough items.
             if self._episode_idx == len(self._episode_buffer):
+                # Append empty list if there isn't enough items.
                 self._episode_buffer.append([])
+            else:
+                # Clean existing buffer item.
+                self._episode_buffer[self._episode_idx] = []
 
     def sample(self, batch_size):
         """Sample uniformly a batch of episodes traces.
