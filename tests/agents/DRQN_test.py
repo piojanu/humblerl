@@ -1,6 +1,7 @@
 from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
 
+import numpy as np
 import pytest
 import random
 
@@ -85,7 +86,7 @@ class TestEpisodicMemory(object):
             episodicmemory.store(transition)
             targets.append(transition)
 
-        return (episodicmemory, targets)
+        return (episodicmemory, np.array(targets))
 
     def test_sample_before_store(self, episodicmemory):
         assert episodicmemory.sample(1) == None
@@ -100,7 +101,7 @@ class TestEpisodicMemory(object):
         for batch, target in zip(sequence, targets):
             assert len(batch) == BATCH_SIZE
             for transition in batch:
-                assert transition == target
+                assert np.array_equal(transition, target)
 
     def test_too_few_transitions(self, filled_episodicmemory):
         episodicmemory, targets = filled_episodicmemory
