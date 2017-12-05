@@ -97,10 +97,10 @@ class EpisodicMemory(object):
                 episode_idx = (episode_idx + 1) % len(self._episode_buffer)
 
             # Check if we have enough transition to sample a full trace.
-            if len(self._episode_buffer[episode_idx]) // 3 > self._trace_length:
+            if len(self._episode_buffer[episode_idx]) // 3 < self._trace_length:
                 raise ValueError(
                     "Trace length is too big! Episode {} has only {} transitions."
-                    .format(episode_idx, len(self._episode_buffer[episode_idx])))
+                    .format(episode_idx, len(self._episode_buffer[episode_idx]) // 3))
 
             # Each trace consist of 3 items, so episode buffer length divided
             # by 3 will give traces number.

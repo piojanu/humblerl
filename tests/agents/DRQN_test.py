@@ -91,6 +91,12 @@ class TestEpisodicMemory(object):
     def test_sample_before_store(self, episodicmemory):
         assert episodicmemory.sample(1) == None
 
+    def test_sample_before_episode_end(self, episodicmemory):
+        # Store one non terminal transition.
+        episodicmemory.store(self.transition_fabric())
+
+        assert episodicmemory.sample(1) == None
+
     def test_sample(self, filled_episodicmemory):
         BATCH_SIZE = 3
 
@@ -103,9 +109,11 @@ class TestEpisodicMemory(object):
             for transition in batch:
                 assert np.array_equal(transition, target)
 
-    def test_too_few_transitions(self, filled_episodicmemory):
-        episodicmemory, targets = filled_episodicmemory
-        episodicmemory._trace_length += 1
+    def test_too_few_transitions(self, episodicmemory):
+        # Store not enough transitions for one trace.
+        episodicmemory.store(self.transition_fabric(is_terminal=True))
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as error:
             episodicmemory.sample(1)
+        assert "Trace length is too big! Episode 0 has only 1 transitions." \
+            in str(error.value)
