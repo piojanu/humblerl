@@ -4,6 +4,21 @@ from __future__ import (absolute_import, division,
 from humblerl.environments import Transition
 
 
+class Context(object):
+    """Context carry useful information and objects for training."""
+
+    def __init__(self, logger=None, policy_info=None):
+        """Initialize context.
+
+        Args:
+            logger (utils.Logger): Object that allows for gathering statistics.
+            policy_info (object): User defined object returned from Agent's policy.
+        """
+
+        self.logger = logger
+        self.policy_info = policy_info
+
+
 class Vision(object):
     """Vision system entity in Reinforcement Learning task."""
 
@@ -87,7 +102,7 @@ class Agent(object):
 
         Args:
             policy (function): Function that takes state/observation and return
-        action (list of floats) to take in the environment and user info.
+        action (list of floats) to take in the environment and user info (optional).
         In discrete action space it's single element list with action number.
         If None, previous policy will be used (it's called current policy).
         [Default: None]
@@ -95,25 +110,35 @@ class Agent(object):
         Returns:
             transition (environments.Transition): Transition packed in namedtuple: 
         state, action, reward, next_state, is_terminal.
-            info (...): User defined object, returned from policy.
+            context (agents.Context): Includes user defined object,
+        returned from policy.
         """
 
-        # Assign policy
+        # Assign new policy if given
         if policy is not None:
             self._cur_policy = policy
 
-        # Checks if everything needed to take step is present
+        # Checks if everything needed to take a step is present
         if self._cur_state is None:
             raise ValueError("You need to reset agent first!")
 
         if self._cur_policy is None:
             raise ValueError("You need to provide agent policy!")
 
-        # Take a step
-        action, info = self._cur_policy(self._cur_state)
+        # Get next action and possible user defined info
+        policy_return = self._cur_policy(self._cur_state)
+        action, info = None, None
+        if isinstance(policy_return, tuple):
+            # When policy returns user defined info too
+            action, info = policy_return
+        else:
+            # When policy returns next action only
+            action = policy_return
+
+        # Take a step in environment
         raw_state, raw_reward, done = self._env.step(action=action)
 
-        # Process raw state and reward
+        # Process raw state and reward with vision system
         state, reward = self._vision(raw_state, raw_reward)
 
         # Collect transition
@@ -127,10 +152,10 @@ class Agent(object):
 
         self._cur_state = state
 
-        return transition, info
+        return transition, Context(policy_info=info)
 
     def run(self, max_steps=-1):
-        """Play agent in environment, take steps as Python generator.
+        """Python generator. Play agent in environment.
 
         Args:
             max_steps (int): Play until env is done or max_steps is reached.
@@ -139,7 +164,8 @@ class Agent(object):
         Returns:
             transition (environments.Transition): Transition packed in namedtuple: 
         state, action, reward, next_state, is_terminal.
-            info (...): User defined object, returned from policy.
+            context (agents.Context): Includes user defined object,
+        returned from policy.
         """
 
         stop = False
