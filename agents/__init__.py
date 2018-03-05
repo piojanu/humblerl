@@ -1,4 +1,4 @@
-from agent import Agent
-from agent import Vision
+from humblerl.agents.agent import Agent
+from humblerl.agents.agent import Vision
 
-from DRQN import EpisodicMemory
+from humblerl.agents.DRQN import EpisodicMemory
