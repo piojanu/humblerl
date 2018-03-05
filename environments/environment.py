@@ -8,7 +8,7 @@ Transition = namedtuple(
 
 
 class Environment(object):
-    """Interface for environments."""
+    """Abstract class for environments."""
 
     ActionSpaceInfo = namedtuple(
         "ActionSpaceInfo", ["size", "type", "descriptions"])
