@@ -51,17 +51,12 @@ class TestVision(object):
 class TestAgent(object):
     _MOCK_INIT_STATE = [1, 2, 3]
     _MOCK_ACTION = [7., ]
-    _MOCK_INFO = "Dupa22"
     _MOCK_NEXT_STATE = [4, 5, 6]
     _MOCK_REWARD = 7.
     _MOCK_DONE = False
 
     _MOCK_VISION_STATE = [7, 8, 9]
     _MOCK_VISION_REWARD = 9.
-
-    @staticmethod
-    def mock_policy(x):
-        return (TestAgent._MOCK_ACTION, TestAgent._MOCK_INFO)
 
     @pytest.fixture
     def agent_mock_env(self):
@@ -103,110 +98,74 @@ class TestAgent(object):
         state = agent.reset(train_mode=False)
 
         assert state == self._MOCK_INIT_STATE
-        assert agent._cur_state == self._MOCK_INIT_STATE
         env.reset.assert_called_with(train_mode=False)
 
-    def test_step(self, agent_mock_env):
+    def test_do(self, agent_mock_env):
         agent, env = agent_mock_env
 
         agent.reset()
-        transition, context = agent.step(
-            policy=self.mock_policy
+        transition = agent.do(
+            self._MOCK_ACTION
         )
 
-        assert context.policy_info == self._MOCK_INFO
         assert transition.state == self._MOCK_INIT_STATE
         assert transition.action == self._MOCK_ACTION
         assert transition.reward == self._MOCK_REWARD
         assert transition.next_state == self._MOCK_NEXT_STATE
         assert transition.is_terminal == self._MOCK_DONE
-        assert agent._cur_policy == self.mock_policy
         env.step.assert_called_with(action=self._MOCK_ACTION)
 
-    def test_step_without_policy_info(self, agent_mock_env):
-        agent, env = agent_mock_env
-
-        def policy(x): return TestAgent._MOCK_ACTION
-
-        agent.reset()
-        transition, context = agent.step(
-            policy=policy
-        )
-
-        assert context.policy_info == None
-        assert transition.state == self._MOCK_INIT_STATE
-        assert transition.action == self._MOCK_ACTION
-        assert transition.reward == self._MOCK_REWARD
-        assert transition.next_state == self._MOCK_NEXT_STATE
-        assert transition.is_terminal == self._MOCK_DONE
-        assert agent._cur_policy == policy
-        env.step.assert_called_with(action=self._MOCK_ACTION)
-
-    def test_run(self, agent_mock_env):
+    @pytest.mark.skip(reason="No way of currently testing this, Model mock is needed")
+    def test_play(self, agent_mock_env):
         agent, env = agent_mock_env
 
         agent.reset()
-        agent.policy = self.mock_policy
 
         stop = 3
         step = 0
 
-        for transition, context in agent.run(stop):
-            assert context.policy_info == self._MOCK_INFO
+        for transition in agent.play(stop):
             assert (transition.state == self._MOCK_INIT_STATE or
                     transition.state == self._MOCK_NEXT_STATE)
             assert transition.action == self._MOCK_ACTION
             assert transition.reward == self._MOCK_REWARD
             assert transition.next_state == self._MOCK_NEXT_STATE
             assert transition.is_terminal == self._MOCK_DONE
-            assert agent._cur_policy == self.mock_policy
             env.step.assert_called_with(action=self._MOCK_ACTION)
 
             step += 1
 
         assert step == stop
 
-    def test_run_early_stop(self, mocker, agent_mock_env):
+    @pytest.mark.skip(reason="No way of currently testing this, Model mock is needed")
+    def test_play_early_stop(self, mocker, agent_mock_env):
         agent, env = agent_mock_env
         env.step.return_value = (self._MOCK_NEXT_STATE,
                                  self._MOCK_REWARD,
                                  True)
 
         agent.reset()
-        agent.policy = self.mock_policy
 
         stop = 3
         step = 0
 
-        for transition, context in agent.run(stop):
-            assert context.policy_info == self._MOCK_INFO
+        for transition in agent.play(stop):
             assert transition.state == self._MOCK_INIT_STATE
             assert transition.action == self._MOCK_ACTION
             assert transition.reward == self._MOCK_REWARD
             assert transition.next_state == self._MOCK_NEXT_STATE
             assert transition.is_terminal == True
-            assert agent._cur_policy == self.mock_policy
             env.step.assert_called_with(action=self._MOCK_ACTION)
 
             step += 1
 
         assert step == 1
 
-    def test_step_without_policy(self, agent_mock_env):
-        agent, env = agent_mock_env
-
-        with pytest.raises(ValueError) as error:
-            agent.reset()
-            agent.step()
-        assert "You need to provide agent policy!" \
-            in str(error.value)
-
     def test_step_without_reset(self, agent_mock_env):
-        def policy(x): return self._MOCK_ACTION
         agent, env = agent_mock_env
 
         with pytest.raises(ValueError) as error:
-            agent.step(policy=policy)
+            agent.do(self._MOCK_ACTION)
         assert "You need to reset agent first!" \
             in str(error.value)
 
@@ -216,22 +175,19 @@ class TestAgent(object):
         state = agent.reset(train_mode=False)
 
         assert state == self._MOCK_VISION_STATE
-        assert agent._cur_state == self._MOCK_VISION_STATE
         env.reset.assert_called_with(train_mode=False)
 
-    def test_vision_step(self, agent_mock_env_and_vision):
+    def test_vision_do(self, agent_mock_env_and_vision):
         agent, env, vision = agent_mock_env_and_vision
 
         agent.reset()
-        transition, context = agent.step(
-            policy=self.mock_policy
+        transition = agent.do(
+            self._MOCK_ACTION
         )
 
-        assert context.policy_info == self._MOCK_INFO
         assert transition.state == self._MOCK_VISION_STATE
         assert transition.action == self._MOCK_ACTION
         assert transition.reward == self._MOCK_VISION_REWARD
         assert transition.next_state == self._MOCK_VISION_STATE
         assert transition.is_terminal == self._MOCK_DONE
-        assert agent._cur_policy == self.mock_policy
         env.step.assert_called_with(action=self._MOCK_ACTION)

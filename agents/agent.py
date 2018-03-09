@@ -54,7 +54,7 @@ class Agent(object):
 
         Args:
             env (humblerl.environments.Environment): Any environment implementing
-        HumbleRL Environment interface.
+        humblerl.environments.Environment interface.
             vision (humblerl.agents.Vision): Processes raw environment output
         before passing it to the agent. [Default: humblerl.agents.Vision()]
         """
@@ -62,23 +62,11 @@ class Agent(object):
         self._env = env
         self._vision = vision
 
-        self._cur_policy = None
-        self._cur_state = None
-
     @property
     def environment(self):
         """Access environment."""
         return self._env
 
-    @property
-    def policy(self):
-        """Access current policy."""
-        return self._cur_policy
-
-    @policy.setter
-    def policy(self, value):
-        """Set current policy."""
-        self._cur_policy = value
     @property
     def vision(self):
         """Access vision."""
@@ -104,64 +92,45 @@ class Agent(object):
 
         return state
 
-    def step(self, policy=None):
+    def do(self, action=None):
         """Take a step in the environment and process output with vision system.
 
         Args:
-            policy (function): Function that takes state/observation and return
-        action (list of floats) to take in the environment and user info (optional).
-        In discrete action space it's single element list with action number.
-        If None, previous policy will be used (it's called current policy).
-        [Default: None]
+            action (list of floats): Action to perform. In discrete action space
+        it's single element list with action number. If None, agent will query its model
+        for action. [Default: None]
 
         Returns:
             transition (environments.Transition): Transition packed in namedtuple: 
         state, action, reward, next_state, is_terminal.
-            context (agents.Context): Includes user defined object,
-        returned from policy.
         """
 
-        # Assign new policy if given
-        if policy is not None:
-            self._cur_policy = policy
-
         # Checks if everything needed to take a step is present
-        if self._cur_state is None:
+        if self.environment.current_state is None:
             raise ValueError("You need to reset agent first!")
 
-        if self._cur_policy is None:
-            raise ValueError("You need to provide agent policy!")
+        curr_state = self.vision(self.environment.current_state)
 
         # Get next action and possible user defined info
-        policy_return = self._cur_policy(self._cur_state)
-        action, info = None, None
-        if isinstance(policy_return, tuple):
-            # When policy returns user defined info too
-            action, info = policy_return
-        else:
-            # When policy returns next action only
-            action = policy_return
 
         # Take a step in environment
-        raw_state, raw_reward, done = self._env.step(action=action)
+        raw_state, raw_reward, done = self.environment.step(action=action)
 
         # Process raw state and reward with vision system
-        state, reward = self._vision(raw_state, raw_reward)
+        state, reward = self.vision(raw_state, raw_reward)
 
         # Collect transition
         transition = Transition(
-            state=self._cur_state,
+            state=curr_state,
             action=action,
             reward=reward,
             next_state=state,
             is_terminal=done
         )
 
-        self._cur_state = state
+        return transition
 
-        return transition, Context(policy_info=info)
-
-    def run(self, max_steps=-1):
+    def play(self, max_steps=-1):
         """Python generator. Play agent in environment.
 
         Args:
@@ -171,16 +140,14 @@ class Agent(object):
         Returns:
             transition (environments.Transition): Transition packed in namedtuple: 
         state, action, reward, next_state, is_terminal.
-            context (agents.Context): Includes user defined object,
-        returned from policy.
         """
 
         stop = False
         step = 0
 
         while not stop and (max_steps == -1 or step < max_steps):
-            transition, info = self.step()
+            transition = self.do()
             stop = transition.is_terminal
 
-            yield transition, info
+            yield transition
             step += 1
