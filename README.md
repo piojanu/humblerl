@@ -9,7 +9,7 @@ It's not a deep learning framework! It's designed to work with them to build age
 
 # How to run?
 ## Dependencies:
-* Python 2.7 (tested). It _should_ work with Python 3 too. 
+* Tested on python 3.6.4. It _should_ work with Python 2.7 too. 
 * numpy - https://scipy.org/install.html
 * mock - https://pypi.python.org/pypi/mock
 * pytest - https://docs.pytest.org/en/latest/getting-started.html
