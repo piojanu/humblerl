@@ -20,6 +20,8 @@ class UnityEnvWrapper(Environment):
             unity_env (UnityEnvironment): Unity environment to wrap.
         """
 
+        super(UnityEnvWrapper, self).__init__()
+
         self._env = unity_env
         self._default_brain = self._env.brain_names[0]
 
@@ -37,13 +39,13 @@ class UnityEnvWrapper(Environment):
         )
 
     @doc_inherit
-    def reset(self, train_mode=True):
+    def _reset(self, train_mode):
         brain_info = self._env.reset(train_mode=train_mode)[
             self._default_brain]
         return brain_info.states[0]
 
     @doc_inherit
-    def step(self, action):
+    def _step(self, action):
         assert action is not None
 
         # Take brain info of first (default) brain

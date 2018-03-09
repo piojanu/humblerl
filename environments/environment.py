@@ -18,6 +18,25 @@ class Environment(object):
     DISCRETE_SPACE = "discrete"
     CONTINUOUS_SPACE = "continuous"
 
+    def __init__(self):
+        """Initialize Environment object."""
+
+        self._curr_state = None
+
+    def _reset(self, train_mode):
+        """This function should be implemented in derived classes.
+
+        Interface is the same as in Environment.reset(...)."""
+
+        raise NotImplementedError()
+
+    def _step(self, action):
+        """This function should be implemented in derived classes.
+
+        Interface is the same as in Environment.step(...)."""
+
+        raise NotImplementedError()
+
     def reset(self, train_mode=True):
         """Reset environment and return a first state.
 
@@ -29,7 +48,9 @@ class Environment(object):
             np.array: The initial state. 
         """
 
-        raise NotImplementedError()
+        self._curr_state = self._reset(train_mode)
+
+        return self._curr_state
 
     def step(self, action):
         """Perform action in environment and return new state, reward and done flag.
@@ -44,7 +65,19 @@ class Environment(object):
             bool: Flag indicating if episode has ended.
         """
 
-        raise NotImplementedError()
+        self._curr_state, reward, done = self._step(action)
+
+        return (self._curr_state, reward, done)
+
+    @property
+    def current_state(self):
+        """Access model.
+
+        Returns:
+            np.array: Current environment state.
+        """
+
+        return self._curr_state
 
     @property
     def action_space_info(self):
