@@ -4,7 +4,7 @@ from __future__ import (absolute_import, division,
 from mock import MagicMock, PropertyMock
 import pytest
 
-from humblerl.agents import Agent, Vision
+from humblerl.agents import Agent, Vision, Model
 from humblerl.environments import Environment
 
 
@@ -59,65 +59,103 @@ class TestAgent(object):
     _MOCK_VISION_REWARD = 9.
 
     @pytest.fixture
-    def agent_mock_env(self):
+    def agent_mock(self):
         env = MagicMock(spec=Environment)
 
-        def change_current_state(train_mode):
+        def env_reset(train_mode):
             type(env).current_state = PropertyMock(return_value=self._MOCK_INIT_STATE)
             return self._MOCK_INIT_STATE
 
-        type(env).current_state = PropertyMock(return_value=None)
-        env.reset.side_effect = change_current_state
-        env.step.return_value = (self._MOCK_NEXT_STATE,
-                                 self._MOCK_REWARD,
-                                 self._MOCK_DONE)
+        def env_step(action):
+            type(env).current_state = PropertyMock(return_value=self._MOCK_NEXT_STATE)
+            return (self._MOCK_NEXT_STATE, self._MOCK_REWARD, self._MOCK_DONE)
 
-        return (Agent(env=env), env)
+        type(env).current_state = PropertyMock(return_value=None)
+        env.reset.side_effect = env_reset
+        env.step.side_effect = env_step
+
+        model = MagicMock(spec=Model)
+        model.select_action.return_value = self._MOCK_ACTION
+
+        return (Agent(env=env, model=model), env, model)
 
     @pytest.fixture
-    def agent_mock_env_and_vision(self):
+    def agent_mock_with_vision(self):
         env = MagicMock(spec=Environment)
 
-        def change_current_state(train_mode):
+        def env_reset(train_mode):
             type(env).current_state = PropertyMock(return_value=self._MOCK_INIT_STATE)
             return self._MOCK_INIT_STATE
 
+        def env_step(action):
+            type(env).current_state = PropertyMock(return_value=self._MOCK_NEXT_STATE)
+            return (self._MOCK_NEXT_STATE, self._MOCK_REWARD, self._MOCK_DONE)
+
         type(env).current_state = PropertyMock(return_value=None)
-        env.reset.side_effect = change_current_state
-        env.step.return_value = (self._MOCK_NEXT_STATE,
-                                 self._MOCK_REWARD,
-                                 self._MOCK_DONE)
+        env.reset.side_effect = env_reset
+        env.step.side_effect = env_step
 
         vision = Vision(lambda s: self._MOCK_VISION_STATE, lambda r: self._MOCK_VISION_REWARD)
 
-        return (Agent(env=env, vision=vision), env, vision)
+        model = MagicMock(spec=Model)
+        model.select_action.return_value = self._MOCK_ACTION
 
-    def test_reset(self, agent_mock_env):
-        agent, env = agent_mock_env
+        return (Agent(env=env, model=model, vision=vision), env, model, vision)
+
+    @staticmethod
+    def transition_env_model_check(transition, env, model, step=0, is_model_used=True,
+                                   mock_init_state=_MOCK_INIT_STATE,
+                                   mock_action=_MOCK_ACTION,
+                                   mock_next_state=_MOCK_NEXT_STATE,
+                                   mock_reward=_MOCK_REWARD,
+                                   mock_done=_MOCK_DONE):
+
+        def check_model(mock_state):
+            assert transition.state == mock_state
+            if is_model_used:
+                model.select_action.assert_called_with(curr_state=mock_state)
+            else:
+                model.select_action.assert_not_called()
+
+        assert transition.action == mock_action
+        assert transition.reward == mock_reward
+        assert transition.next_state == mock_next_state
+        assert transition.is_terminal == mock_done
+        env.step.assert_called_with(action=mock_action)
+        if step == 0:
+            check_model(mock_init_state)
+        else:
+            check_model(mock_next_state)
+        model.report.assert_called_with(transition=transition)
+
+    def test_reset(self, agent_mock):
+        agent, env, model = agent_mock
 
         state = agent.reset(train_mode=False)
 
         assert state == self._MOCK_INIT_STATE
         env.reset.assert_called_with(train_mode=False)
 
-    def test_do(self, agent_mock_env):
-        agent, env = agent_mock_env
+    def test_do_action(self, agent_mock):
+        agent, env, model = agent_mock
 
         agent.reset()
         transition = agent.do(
             self._MOCK_ACTION
         )
 
-        assert transition.state == self._MOCK_INIT_STATE
-        assert transition.action == self._MOCK_ACTION
-        assert transition.reward == self._MOCK_REWARD
-        assert transition.next_state == self._MOCK_NEXT_STATE
-        assert transition.is_terminal == self._MOCK_DONE
-        env.step.assert_called_with(action=self._MOCK_ACTION)
+        self.transition_env_model_check(transition, env, model, is_model_used=False)
 
-    @pytest.mark.skip(reason="No way of currently testing this, Model mock is needed")
-    def test_play(self, agent_mock_env):
-        agent, env = agent_mock_env
+    def test_do_model(self, agent_mock):
+        agent, env, model = agent_mock
+
+        agent.reset()
+        transition = agent.do()
+
+        self.transition_env_model_check(transition, env, model)
+
+    def test_play(self, agent_mock):
+        agent, env, model = agent_mock
 
         agent.reset()
 
@@ -125,24 +163,19 @@ class TestAgent(object):
         step = 0
 
         for transition in agent.play(stop):
-            assert (transition.state == self._MOCK_INIT_STATE or
-                    transition.state == self._MOCK_NEXT_STATE)
-            assert transition.action == self._MOCK_ACTION
-            assert transition.reward == self._MOCK_REWARD
-            assert transition.next_state == self._MOCK_NEXT_STATE
-            assert transition.is_terminal == self._MOCK_DONE
-            env.step.assert_called_with(action=self._MOCK_ACTION)
+            self.transition_env_model_check(transition, env, model, step=step)
 
             step += 1
 
         assert step == stop
 
-    @pytest.mark.skip(reason="No way of currently testing this, Model mock is needed")
-    def test_play_early_stop(self, mocker, agent_mock_env):
-        agent, env = agent_mock_env
-        env.step.return_value = (self._MOCK_NEXT_STATE,
-                                 self._MOCK_REWARD,
-                                 True)
+    def test_play_early_stop(self, agent_mock):
+        agent, env, model = agent_mock
+
+        def env_step(action):
+            type(env).current_state = PropertyMock(return_value=self._MOCK_NEXT_STATE)
+            return (self._MOCK_NEXT_STATE, self._MOCK_REWARD, True)
+        env.step.side_effect = env_step
 
         agent.reset()
 
@@ -150,44 +183,37 @@ class TestAgent(object):
         step = 0
 
         for transition in agent.play(stop):
-            assert transition.state == self._MOCK_INIT_STATE
-            assert transition.action == self._MOCK_ACTION
-            assert transition.reward == self._MOCK_REWARD
-            assert transition.next_state == self._MOCK_NEXT_STATE
-            assert transition.is_terminal == True
-            env.step.assert_called_with(action=self._MOCK_ACTION)
+            self.transition_env_model_check(transition, env, model, step=step, mock_done=True)
 
             step += 1
 
         assert step == 1
 
-    def test_step_without_reset(self, agent_mock_env):
-        agent, env = agent_mock_env
+    def test_step_without_reset(self, agent_mock):
+        agent, env, model = agent_mock
 
         with pytest.raises(ValueError) as error:
             agent.do(self._MOCK_ACTION)
         assert "You need to reset agent first!" \
             in str(error.value)
 
-    def test_vision_reset(self, agent_mock_env_and_vision):
-        agent, env, vision = agent_mock_env_and_vision
+    def test_vision_reset(self, agent_mock_with_vision):
+        agent, env, model, vision = agent_mock_with_vision
 
         state = agent.reset(train_mode=False)
 
         assert state == self._MOCK_VISION_STATE
         env.reset.assert_called_with(train_mode=False)
 
-    def test_vision_do(self, agent_mock_env_and_vision):
-        agent, env, vision = agent_mock_env_and_vision
+    def test_vision_do(self, agent_mock_with_vision):
+        agent, env, model, vision = agent_mock_with_vision
 
         agent.reset()
         transition = agent.do(
             self._MOCK_ACTION
         )
 
-        assert transition.state == self._MOCK_VISION_STATE
-        assert transition.action == self._MOCK_ACTION
-        assert transition.reward == self._MOCK_VISION_REWARD
-        assert transition.next_state == self._MOCK_VISION_STATE
-        assert transition.is_terminal == self._MOCK_DONE
-        env.step.assert_called_with(action=self._MOCK_ACTION)
+        self.transition_env_model_check(transition, env, model, is_model_used=False,
+                                        mock_init_state=self._MOCK_VISION_STATE,
+                                        mock_next_state=self._MOCK_VISION_STATE,
+                                        mock_reward=self._MOCK_VISION_REWARD)

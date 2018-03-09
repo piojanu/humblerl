@@ -4,19 +4,27 @@ from __future__ import (absolute_import, division,
 from humblerl.environments import Transition
 
 
-class Context(object):
-    """Context carry useful information and objects for training."""
+class Model(object):
+    """Abstract class representing model in Reinforcement Learning task."""
 
-    def __init__(self, logger=None, policy_info=None):
-        """Initialize context.
+    def select_action(self, curr_state):
+        """Evaluate model and return action.
 
-        Args:
-            logger (utils.Logger): Object that allows for gathering statistics.
-            policy_info (object): User defined object returned from Agent's policy.
+        Returns:
+            list of floats: action to take in the environment.
         """
 
-        self.logger = logger
-        self.policy_info = policy_info
+        raise NotImplementedError()
+
+    def report(self, transition):
+        """Inform model about transition in the environment.
+
+        Args:
+            transition (environments.Transition): Transition packed in namedtuple: 
+        state, action, reward, next_state, is_terminal.
+        """
+
+        raise NotImplementedError()
 
 
 class Vision(object):
@@ -49,23 +57,31 @@ class Vision(object):
 class Agent(object):
     """Agent entity in Reinforcement Learning task."""
 
-    def __init__(self, env, vision=Vision()):
+    def __init__(self, env, model, vision=Vision()):
         """Initialize agent object.
 
         Args:
             env (humblerl.environments.Environment): Any environment implementing
         humblerl.environments.Environment interface.
+            model (humnlerl.agents.Model): Any model implementing humblerl.agents.Model
+        interface.
             vision (humblerl.agents.Vision): Processes raw environment output
         before passing it to the agent. [Default: humblerl.agents.Vision()]
         """
 
         self._env = env
+        self._model = model
         self._vision = vision
 
     @property
     def environment(self):
         """Access environment."""
         return self._env
+
+    @property
+    def model(self):
+        """Access model."""
+        return self._model
 
     @property
     def vision(self):
@@ -111,7 +127,9 @@ class Agent(object):
 
         curr_state = self.vision(self.environment.current_state)
 
-        # Get next action and possible user defined info
+        # Get next action
+        if action == None:
+            action = self.model.select_action(curr_state=curr_state)
 
         # Take a step in environment
         raw_state, raw_reward, done = self.environment.step(action=action)
@@ -127,6 +145,9 @@ class Agent(object):
             next_state=state,
             is_terminal=done
         )
+
+        # Inform model about transition
+        self.model.report(transition=transition)
 
         return transition
 
