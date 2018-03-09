@@ -39,8 +39,11 @@ class Vision(object):
         self._process_reward = \
             reward_processor if reward_processor is not None else lambda x: x
 
-    def __call__(self, state, reward):
-        return self._process_state(state), self._process_reward(reward)
+    def __call__(self, state, reward=None):
+        if reward == None:
+            return self._process_state(state)
+        else:
+            return self._process_state(state), self._process_reward(reward)
 
 
 class Agent(object):
@@ -76,6 +79,10 @@ class Agent(object):
     def policy(self, value):
         """Set current policy."""
         self._cur_policy = value
+    @property
+    def vision(self):
+        """Access vision."""
+        return self._vision
 
     def reset(self, train_mode=True):
         """Reset environment and return a first state.
@@ -89,10 +96,10 @@ class Agent(object):
         """
 
         # Reset environment.
-        raw_state = self._env.reset(train_mode=train_mode)
+        raw_state = self.environment.reset(train_mode=train_mode)
 
         # Process raw state
-        state, _ = self._vision(raw_state, 0)
+        state = self.vision(raw_state)
         self._cur_state = state
 
         return state

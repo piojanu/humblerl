@@ -1,7 +1,7 @@
 from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
 
-from mock import MagicMock
+from mock import MagicMock, PropertyMock
 import pytest
 
 from humblerl.agents import Agent, Vision
@@ -19,6 +19,12 @@ class TestVision(object):
         assert state == self.MOCK_STATE
         assert reward == self.MOCK_REWARD
 
+    def test_default_vision_system_only_state(self):
+        vision_system = Vision()
+        state = vision_system(self.MOCK_STATE)
+
+        assert state == self.MOCK_STATE
+
     def test_custom_vision_system(self):
         def state_processor(x):
             return x + ["dupa"]
@@ -31,6 +37,15 @@ class TestVision(object):
 
         assert state == state_processor(self.MOCK_STATE)
         assert reward == reward_processor(self.MOCK_REWARD)
+
+    def test_custom_vision_system_only_state(self):
+        def state_processor(x):
+            return x + ["dupa"]
+
+        vision_system = Vision(state_processor)
+        state = vision_system(self.MOCK_STATE)
+
+        assert state == state_processor(self.MOCK_STATE)
 
 
 class TestAgent(object):
@@ -51,7 +66,13 @@ class TestAgent(object):
     @pytest.fixture
     def agent_mock_env(self):
         env = MagicMock(spec=Environment)
-        env.reset.return_value = self._MOCK_INIT_STATE
+
+        def change_current_state(train_mode):
+            type(env).current_state = PropertyMock(return_value=self._MOCK_INIT_STATE)
+            return self._MOCK_INIT_STATE
+
+        type(env).current_state = PropertyMock(return_value=None)
+        env.reset.side_effect = change_current_state
         env.step.return_value = (self._MOCK_NEXT_STATE,
                                  self._MOCK_REWARD,
                                  self._MOCK_DONE)
@@ -61,14 +82,18 @@ class TestAgent(object):
     @pytest.fixture
     def agent_mock_env_and_vision(self):
         env = MagicMock(spec=Environment)
-        env.reset.return_value = self._MOCK_INIT_STATE
+
+        def change_current_state(train_mode):
+            type(env).current_state = PropertyMock(return_value=self._MOCK_INIT_STATE)
+            return self._MOCK_INIT_STATE
+
+        type(env).current_state = PropertyMock(return_value=None)
+        env.reset.side_effect = change_current_state
         env.step.return_value = (self._MOCK_NEXT_STATE,
                                  self._MOCK_REWARD,
                                  self._MOCK_DONE)
 
-        vision = MagicMock(spec=Vision)
-        vision.return_value = (
-            self._MOCK_VISION_STATE, self._MOCK_VISION_REWARD)
+        vision = Vision(lambda s: self._MOCK_VISION_STATE, lambda r: self._MOCK_VISION_REWARD)
 
         return (Agent(env=env, vision=vision), env, vision)
 
@@ -193,7 +218,6 @@ class TestAgent(object):
         assert state == self._MOCK_VISION_STATE
         assert agent._cur_state == self._MOCK_VISION_STATE
         env.reset.assert_called_with(train_mode=False)
-        vision.assert_called_with(self._MOCK_INIT_STATE, 0)
 
     def test_vision_step(self, agent_mock_env_and_vision):
         agent, env, vision = agent_mock_env_and_vision
@@ -211,4 +235,3 @@ class TestAgent(object):
         assert transition.is_terminal == self._MOCK_DONE
         assert agent._cur_policy == self.mock_policy
         env.step.assert_called_with(action=self._MOCK_ACTION)
-        vision.assert_called_with(self._MOCK_NEXT_STATE, self._MOCK_REWARD)
