@@ -1,51 +1,58 @@
 from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
 
+import numpy as np
 import pytest
 
-from humblerl.environments import Environment
+from humblerl.environments import UnityEnvWrapper
+from mockunityenvironment import MockUnityEnvironmentVector, MockUnityEnvironmentVisual
 
 
-class MockSpecificEnvironment(Environment):
-    _MOCK_INIT_STATE = [1, 2, 3]
-    _MOCK_NEXT_STATE = [4, 5, 6]
-    _MOCK_REWARD = 7.
-    _MOCK_DONE = False
+class TestEnvironmentWrapper(object):
+    @pytest.fixture(params=[
+        # Test wrapper for Unity environment with vector observations (state)
+        UnityEnvWrapper(unity_env=MockUnityEnvironmentVector(), use_observations=False),
+        # Test wrapper for Unity environment with visual observations (image)
+        UnityEnvWrapper(unity_env=MockUnityEnvironmentVisual(), use_observations=True),
+    ], ids=["UnityEnv vector observations", "UnityEnv visual observations"])
+    def envwrapper(self, request):
+        wrapper, mockenv = request.param, request.param._env
+        return wrapper, mockenv
 
-    def _reset(self, train_mode):
-        return self._MOCK_INIT_STATE
+    def test_reset(self, envwrapper):
+        wrapper, mockenv = envwrapper
+        TRAIN_MODE = False
 
-    def _step(self, action):
-        return (self._MOCK_NEXT_STATE, self._MOCK_REWARD, self._MOCK_DONE)
+        state = wrapper.reset(train_mode=TRAIN_MODE)
 
+        assert mockenv._train_mode == TRAIN_MODE
+        assert np.array_equal(state, mockenv._MOCK_STATE)
 
-class TestEnvironment(object):
-    _MOCK_ACTION = [7., ]
+    def test_step(self, envwrapper):
+        wrapper, mockenv = envwrapper
+        ACTION = (0, 1, 2)
 
-    @pytest.fixture
-    def specific_env_mock(self):
-        return MockSpecificEnvironment()
+        state, reward, done = wrapper.step(ACTION)
 
-    def test_reset(self, specific_env_mock):
-        state = specific_env_mock.reset()
+        assert mockenv._action == ACTION
+        assert np.array_equal(state, mockenv._MOCK_STATE)
+        assert reward == mockenv._MOCK_REWARD
+        assert done == mockenv._MOCK_DONE
 
-        assert state == MockSpecificEnvironment._MOCK_INIT_STATE
-        assert specific_env_mock.current_state == MockSpecificEnvironment._MOCK_INIT_STATE
+    def test_action_space_info(self, envwrapper):
+        wrapper, mockenv = envwrapper
 
-    def test_step(self, specific_env_mock):
-        state, reward, done = specific_env_mock.step(self._MOCK_ACTION)
+        assert wrapper.action_space_info.size == \
+            mockenv._MOCK_ACTION_SIZE
+        assert wrapper.action_space_info.type == \
+            mockenv._MOCK_ACTION_TYPE
+        assert wrapper.action_space_info.descriptions == \
+            mockenv._MOCK_ACTION_DESCRIPTIONS
 
-        assert state == MockSpecificEnvironment._MOCK_NEXT_STATE
-        assert reward == MockSpecificEnvironment._MOCK_REWARD
-        assert done == MockSpecificEnvironment._MOCK_DONE
-        assert specific_env_mock.current_state == MockSpecificEnvironment._MOCK_NEXT_STATE
+    def test_state_space_info(self, envwrapper):
+        wrapper, mockenv = envwrapper
 
-    def test_reset_step(self, specific_env_mock):
-        init = specific_env_mock.reset()
-        state, reward, done = specific_env_mock.step(self._MOCK_ACTION)
-
-        assert init == MockSpecificEnvironment._MOCK_INIT_STATE
-        assert state == MockSpecificEnvironment._MOCK_NEXT_STATE
-        assert reward == MockSpecificEnvironment._MOCK_REWARD
-        assert done == MockSpecificEnvironment._MOCK_DONE
-        assert specific_env_mock.current_state == MockSpecificEnvironment._MOCK_NEXT_STATE
+        assert wrapper.state_space_info.size == \
+            mockenv._MOCK_STATE.shape
+        assert wrapper.state_space_info.type == \
+            mockenv._MOCK_STATE_TYPE
