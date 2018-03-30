@@ -4,8 +4,9 @@ from __future__ import (absolute_import, division,
 import numpy as np
 import pytest
 
-from humblerl.environments import UnityEnvWrapper
+from humblerl.environments import UnityEnvWrapper, OpenAIGymWrapper
 from mockunityenvironment import MockUnityEnvironmentVector, MockUnityEnvironmentVisual
+from mockopenaigym import MockOpenAIGymDiscrete, MockOpenAIGymContinuous
 
 
 class TestEnvironmentWrapper(object):
@@ -14,7 +15,13 @@ class TestEnvironmentWrapper(object):
         UnityEnvWrapper(unity_env=MockUnityEnvironmentVector(), use_observations=False),
         # Test wrapper for Unity environment with visual observations (image)
         UnityEnvWrapper(unity_env=MockUnityEnvironmentVisual(), use_observations=True),
-    ], ids=["UnityEnv vector observations", "UnityEnv visual observations"])
+        # Test wrapper for OpenAI Gym environment with continuous action space
+        OpenAIGymWrapper(gym_env=MockOpenAIGymContinuous()),
+        # Test wrapper for OpenAI Gym environment with discrete action space
+        OpenAIGymWrapper(gym_env=MockOpenAIGymDiscrete()),
+    ], ids=[
+        "UnityEnv vector observations", "UnityEnv visual observations",
+        "OpenAI Gym continuous action space", "OpenAI Gym discrete action space"])
     def envwrapper(self, request):
         wrapper, mockenv = request.param, request.param._env
         return wrapper, mockenv
@@ -25,7 +32,6 @@ class TestEnvironmentWrapper(object):
 
         state = wrapper.reset(train_mode=TRAIN_MODE)
 
-        assert mockenv._train_mode == TRAIN_MODE
         assert np.array_equal(state, mockenv._MOCK_STATE)
 
     def test_step(self, envwrapper):
