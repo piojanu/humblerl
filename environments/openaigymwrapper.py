@@ -43,6 +43,11 @@ class OpenAIGymWrapper(Environment):
                 size=self._env.observation_space.shape,
                 type="continuous"
             )
+        elif type(self._env.observation_space is gym.spaces.discrete.Discrete):
+            self._state_space_info = Environment.StateSpaceInfo(
+                size=self._env.observation_space.n,
+                type="discrete",
+            )
         else:
             raise ValueError("Unknown observation space type!")
 
