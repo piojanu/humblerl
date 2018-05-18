@@ -4,8 +4,8 @@ from __future__ import (absolute_import, division,
 from mock import MagicMock, PropertyMock
 import pytest
 
-from humblerl.agents import Agent, Vision, Model
-from humblerl.environments import Environment
+from humblerl import Agent, Vision, Model
+from humblerl import Environment
 
 
 class TestVision(object):

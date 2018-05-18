@@ -4,9 +4,9 @@ from __future__ import (absolute_import, division,
 import numpy as np
 import pytest
 
-from humblerl.environments import UnityEnvWrapper, OpenAIGymWrapper
-from mockunityenvironment import MockUnityEnvironmentVector, MockUnityEnvironmentVisual
-from mockopenaigym import MockOpenAIGymDiscrete, MockOpenAIGymContinuous
+from humblerl.utils.wrappers import UnityEnvWrapper, OpenAIGymWrapper
+from mocks.mockunityenvironment import MockUnityEnvironmentVector, MockUnityEnvironmentVisual
+from mocks.mockopenaigym import MockOpenAIGymDiscrete, MockOpenAIGymContinuous
 
 
 class TestEnvironmentWrapper(object):
