@@ -1,13 +1,14 @@
 from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
 
+from abc import ABCMeta, abstractmethod
 from collections import namedtuple
 
 Transition = namedtuple(
     "Transition", ["state", "action", "reward", "next_state", "is_terminal"])
 
 
-class Environment(object):
+class Environment(metaclass=ABCMeta):
     """Abstract class for environments."""
 
     ActionSpaceInfo = namedtuple(
@@ -23,19 +24,19 @@ class Environment(object):
 
         self._curr_state = None
 
+    @abstractmethod
     def _reset(self, train_mode):
         """This function should be implemented in derived classes.
 
         Interface is the same as in Environment.reset(...)."""
+        pass
 
-        raise NotImplementedError()
-
+    @abstractmethod
     def _step(self, action):
         """This function should be implemented in derived classes.
 
         Interface is the same as in Environment.step(...)."""
-
-        raise NotImplementedError()
+        pass
 
     def reset(self, train_mode=True):
         """Reset environment and return a first state.

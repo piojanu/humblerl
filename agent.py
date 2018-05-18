@@ -1,21 +1,22 @@
 from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
 
+from abc import ABCMeta, abstractmethod
 from humblerl import Transition
 
-
-class Policy(object):
+class Policy(metaclass=ABCMeta):
     """Abstract class representing policy in Reinforcement Learning task."""
 
+    @abstractmethod
     def select_action(self, curr_state):
         """Evaluate policy and return action.
 
         Returns:
             list of floats: action to take in the environment.
         """
+        pass
 
-        raise NotImplementedError()
-
+    @abstractmethod
     def report(self, transition):
         """Inform policy about transition in the environment.
 
@@ -23,8 +24,7 @@ class Policy(object):
             transition (Transition): Transition packed in namedtuple: 
         state, action, reward, next_state, is_terminal.
         """
-
-        raise NotImplementedError()
+        pass
 
 
 class Vision(object):
