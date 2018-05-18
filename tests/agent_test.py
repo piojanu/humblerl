@@ -4,7 +4,7 @@ from __future__ import (absolute_import, division,
 from mock import MagicMock, PropertyMock
 import pytest
 
-from humblerl import Agent, Vision, Model
+from humblerl import Agent, Vision, Policy
 from humblerl import Environment
 
 
@@ -74,7 +74,7 @@ class TestAgent(object):
         env.reset.side_effect = env_reset
         env.step.side_effect = env_step
 
-        model = MagicMock(spec=Model)
+        model = MagicMock(spec=Policy)
         model.select_action.return_value = self._MOCK_ACTION
 
         return (Agent(env=env, model=model), env, model)
@@ -97,7 +97,7 @@ class TestAgent(object):
 
         vision = Vision(lambda s: self._MOCK_VISION_STATE, lambda r: self._MOCK_VISION_REWARD)
 
-        model = MagicMock(spec=Model)
+        model = MagicMock(spec=Policy)
         model.select_action.return_value = self._MOCK_ACTION
 
         return (Agent(env=env, model=model, vision=vision), env, model, vision)

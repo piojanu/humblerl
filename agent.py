@@ -4,11 +4,11 @@ from __future__ import (absolute_import, division,
 from humblerl import Transition
 
 
-class Model(object):
-    """Abstract class representing model in Reinforcement Learning task."""
+class Policy(object):
+    """Abstract class representing policy in Reinforcement Learning task."""
 
     def select_action(self, curr_state):
-        """Evaluate model and return action.
+        """Evaluate policy and return action.
 
         Returns:
             list of floats: action to take in the environment.
@@ -17,10 +17,10 @@ class Model(object):
         raise NotImplementedError()
 
     def report(self, transition):
-        """Inform model about transition in the environment.
+        """Inform policy about transition in the environment.
 
         Args:
-            transition (environments.Transition): Transition packed in namedtuple: 
+            transition (Transition): Transition packed in namedtuple: 
         state, action, reward, next_state, is_terminal.
         """
 
@@ -61,12 +61,12 @@ class Agent(object):
         """Initialize agent object.
 
         Args:
-            env (humblerl.environments.Environment): Any environment implementing
+            env (Environment): Any environment implementing
         humblerl.environments.Environment interface.
-            model (humnlerl.agents.Model): Any model implementing humblerl.agents.Model
+            model (Policy): Any model implementing Policy
         interface.
-            vision (humblerl.agents.Vision): Processes raw environment output
-        before passing it to the agent. [Default: humblerl.agents.Vision()]
+            vision (Vision): Processes raw environment output
+        before passing it to the agent. [Default: Vision()]
         """
 
         self._env = env
@@ -117,7 +117,7 @@ class Agent(object):
         for action. [Default: None]
 
         Returns:
-            transition (environments.Transition): Transition packed in namedtuple: 
+            transition (Transition): Transition packed in namedtuple: 
         state, action, reward, next_state, is_terminal.
         """
 
@@ -159,7 +159,7 @@ class Agent(object):
         If -1, then play until env is done. [Default: -1]
 
         Returns:
-            transition (environments.Transition): Transition packed in namedtuple: 
+            transition (Transition): Transition packed in namedtuple: 
         state, action, reward, next_state, is_terminal.
         """
 

@@ -1,12 +1,12 @@
-from humblerl.agents import Agent, Model
-from humblerl.environments import OpenAIGymWrapper
+from humblerl import Agent, Policy
+from humblerl import OpenAIGymWrapper
 
 import gym
 import numpy as np
 import matplotlib.pyplot as plt
 
 
-class TabularQLearning(Model):
+class TabularQLearning(Policy):
     def __init__(self, nstates, nactions, learning_rate=0.9, decay_steps=300, discount_factor=0.95):
         # Store training parameters
         self._lr = learning_rate
@@ -70,10 +70,10 @@ if __name__ == "__main__":
     print(model.Q)
 
     # Plot episodes lengths and returns
-    plt.subplot(2,1,1)
+    plt.subplot(2, 1, 1)
     plt.plot(returns, label="Returns")
     plt.gca().legend(loc='best')
-    plt.subplot(2,1,2)
+    plt.subplot(2, 1, 2)
     plt.plot(episodes_len, label="Episodes lengths")
     plt.gca().legend(loc='best')
     plt.show()
