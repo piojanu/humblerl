@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 
 class Dynamics(metaclass=ABCMeta):
-    """Dynamics interface to world model."""
+    """Interface to dynamics model."""
 
     @abstractmethod
     def __call__(self, state, action):
@@ -15,6 +15,25 @@ class Dynamics(metaclass=ABCMeta):
           (object): Next state after taking the given action in the given state.
         """
         pass
+
+class PerfectDynamics(Dynamics, metaclass=ABCMeta):
+    """Interface to perfect information dynamics model."""
+
+    @abstractmethod
+    def __call__(self, state, action):
+        """Simulate a world transition.
+
+        Args:
+          state (object): Current world state to start from.
+          action (object): Action to take in current world state.
+        
+        Returns:
+          (object): Next state.
+          (float): Reward or final state value.
+          (bool): Is terminal.
+        """
+        pass
+
 
 class Modeler(metaclass=ABCMeta):
     """Modeler interface to world model learner."""
