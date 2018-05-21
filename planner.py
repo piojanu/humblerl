@@ -1,3 +1,6 @@
+from __future__ import (absolute_import, division,
+                        print_function, unicode_literals)
+
 from abc import ABCMeta, abstractmethod
 
 class Policy(metaclass=ABCMeta):
@@ -19,7 +22,6 @@ class Policy(metaclass=ABCMeta):
 class Planner(metaclass=ABCMeta):
     """Planner interface to model-based policy learning logic."""
 
-    @abstractmethod
     def __init__(self, model):
         """Initialize planner.
         
@@ -28,10 +30,9 @@ class Planner(metaclass=ABCMeta):
         """
 
         self._model = model
-        
 
     @abstractmethod
-    def get_policy():
+    def get_policy(self):
         """Passes policy used to select actions.
         
         Return:

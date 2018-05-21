@@ -35,21 +35,22 @@ class Vision(object):
 class Agent(object):
     """Agent entity in Reinforcement Learning task."""
 
-    def __init__(self, env, model, vision=Vision()):
+    def __init__(self, env, policy, vision=Vision(), callbacks=[]):
         """Initialize agent object.
 
         Args:
             env (Environment): Any environment implementing
         humblerl.environments.Environment interface.
-            model (Policy): Any model implementing Policy
+            policy (Policy): Any policy implementing Policy
         interface.
             vision (Vision): Processes raw environment output
         before passing it to the agent. [Default: Vision()]
         """
 
         self._env = env
-        self._model = model
+        self._policy = policy
         self._vision = vision
+        self._callbacks = callbacks
 
     @property
     def environment(self):
@@ -57,14 +58,19 @@ class Agent(object):
         return self._env
 
     @property
-    def model(self):
-        """Access model."""
-        return self._model
+    def policy(self):
+        """Access policy."""
+        return self._policy
 
     @property
     def vision(self):
         """Access vision."""
         return self._vision
+    
+    @property
+    def callbacks(self):
+        """Access callbacks."""
+        return self._callbacks
 
     def reset(self, train_mode=True):
         """Reset environment and return a first state.
@@ -91,7 +97,7 @@ class Agent(object):
 
         Args:
             action (list of floats): Action to perform. In discrete action space
-        it's single element list with action number. If None, agent will query its model
+        it's single element list with action number. If None, agent will query its policy
         for action. [Default: None]
 
         Returns:
@@ -107,7 +113,7 @@ class Agent(object):
 
         # Get next action
         if action == None:
-            action = self.model.select_action(curr_state=curr_state)
+            action = self.policy(state=curr_state)
 
         # Take a step in environment
         raw_state, raw_reward, done = self.environment.step(action=action)
@@ -124,8 +130,9 @@ class Agent(object):
             is_terminal=done
         )
 
-        # Inform model about transition
-        self.model.report(transition=transition)
+        # Inform callbacks about transition
+        for callback in self._callbacks:
+            callback.report_step(transition=transition)
 
         return transition
 
