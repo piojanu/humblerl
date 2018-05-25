@@ -66,7 +66,7 @@ class Agent(object):
     def vision(self):
         """Access vision."""
         return self._vision
-    
+
     @property
     def callbacks(self):
         """Access callbacks."""

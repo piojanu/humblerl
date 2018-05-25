@@ -12,9 +12,11 @@ from mocks.mockopenaigym import MockOpenAIGymDiscrete, MockOpenAIGymContinuous
 class TestEnvironmentWrapper(object):
     @pytest.fixture(params=[
         # Test wrapper for Unity environment with vector observations (state)
-        UnityEnvWrapper(unity_env=MockUnityEnvironmentVector(), use_observations=False),
+        UnityEnvWrapper(unity_env=MockUnityEnvironmentVector(),
+                        use_observations=False),
         # Test wrapper for Unity environment with visual observations (image)
-        UnityEnvWrapper(unity_env=MockUnityEnvironmentVisual(), use_observations=True),
+        UnityEnvWrapper(unity_env=MockUnityEnvironmentVisual(),
+                        use_observations=True),
         # Test wrapper for OpenAI Gym environment with continuous action space
         OpenAIGymWrapper(gym_env=MockOpenAIGymContinuous()),
         # Test wrapper for OpenAI Gym environment with discrete action space

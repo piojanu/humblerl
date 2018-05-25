@@ -3,6 +3,7 @@ from __future__ import (absolute_import, division,
 
 import numpy as np
 
+
 class MockUnityEnvironmentVector(object):
     _MOCK_STATE = np.ones((3, ), dtype=float)
     _MOCK_STATE_TYPE = "continuous"
@@ -19,7 +20,8 @@ class MockUnityEnvironmentVector(object):
 
         def __init__(self):
             # List of numpy arrays (num_cameras x height x with x channels)
-            self.vector_observations = (MockUnityEnvironmentVector._MOCK_STATE, )
+            self.vector_observations = (
+                MockUnityEnvironmentVector._MOCK_STATE, )
             self.rewards = (MockUnityEnvironmentVector._MOCK_REWARD, )
             self.local_done = (MockUnityEnvironmentVector._MOCK_DONE, )
 
@@ -45,6 +47,7 @@ class MockUnityEnvironmentVector(object):
         self._action = action
         return {self.brain_names[0]: self._BrainInfo(), }
 
+
 class MockUnityEnvironmentVisual(object):
     _MOCK_STATE = np.ones((5, 4, 3), dtype=float)
     _MOCK_STATE_TYPE = "observation"
@@ -61,7 +64,8 @@ class MockUnityEnvironmentVisual(object):
 
         def __init__(self):
             # List of numpy arrays (num_cameras x height x with x channels)
-            self.visual_observations = (np.expand_dims(MockUnityEnvironmentVisual._MOCK_STATE, axis=0), )
+            self.visual_observations = (np.expand_dims(
+                MockUnityEnvironmentVisual._MOCK_STATE, axis=0), )
             self.rewards = (MockUnityEnvironmentVisual._MOCK_REWARD, )
             self.local_done = (MockUnityEnvironmentVisual._MOCK_DONE, )
 

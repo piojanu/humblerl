@@ -49,7 +49,8 @@ class UnityEnvWrapper(Environment):
 
     @doc_inherit
     def _reset(self, train_mode=True):
-        brain_info = self._env.reset(train_mode=train_mode)[self._default_brain]
+        brain_info = self._env.reset(train_mode=train_mode)[
+            self._default_brain]
 
         if self._use_observations:
             # Layout of visual observations is HWC
