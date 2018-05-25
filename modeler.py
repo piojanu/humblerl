@@ -50,21 +50,10 @@ class Modeler(metaclass=ABCMeta):
     """Modeler interface to world model learning logic."""
 
     @abstractmethod
-    def get_dynamics():
+    def get_dynamics(self):
         """Passes world dynamics used to simulate transitions.
         
         Return:
           (Dynamics): World dynamics model.
         """
         pass
-
-    @abstractmethod
-    def report_step(self, transition):
-        """Receives step report from RL loop.
-        
-        Args:
-          transition (Transition): Last transition (state, action, reward, next state, is terminal)
-        in RL environment.
-        """
-        pass
-
