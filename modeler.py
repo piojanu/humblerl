@@ -3,6 +3,7 @@ from __future__ import (absolute_import, division,
 
 from abc import ABCMeta, abstractmethod
 
+
 class Dynamics(metaclass=ABCMeta):
     """Interface to dynamics model."""
 
@@ -14,7 +15,7 @@ class Dynamics(metaclass=ABCMeta):
           state (object): Current world state to start from.
           action (object): Action to take in current world state.
         None action is not allowed.
-        
+
         Returns:
           (object): Next state after taking the given action in the given state.
         If action is not allowed, returns None.
@@ -33,12 +34,12 @@ class PerfectDynamics(Dynamics, metaclass=ABCMeta):
           state (object): Current world state to start from.
           action (object): Action to take in current world state.
         None action is not allowed.
-        
+
         Returns:
           (object): Next state.
           (float): Reward or final state value.
           (bool): Is terminal.
-        
+
           or
 
           If action is not allowed, returns (None, None, None).
@@ -52,7 +53,7 @@ class Modeler(metaclass=ABCMeta):
     @abstractmethod
     def get_dynamics(self):
         """Passes world dynamics used to simulate transitions.
-        
+
         Return:
           (Dynamics): World dynamics model.
         """

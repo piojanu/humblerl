@@ -63,11 +63,13 @@ class TestAgent(object):
         env = MagicMock(spec=Environment)
 
         def env_reset(train_mode):
-            type(env).current_state = PropertyMock(return_value=self._MOCK_INIT_STATE)
+            type(env).current_state = PropertyMock(
+                return_value=self._MOCK_INIT_STATE)
             return self._MOCK_INIT_STATE
 
         def env_step(action):
-            type(env).current_state = PropertyMock(return_value=self._MOCK_NEXT_STATE)
+            type(env).current_state = PropertyMock(
+                return_value=self._MOCK_NEXT_STATE)
             return (self._MOCK_NEXT_STATE, self._MOCK_REWARD, self._MOCK_DONE)
 
         type(env).current_state = PropertyMock(return_value=None)
@@ -84,18 +86,21 @@ class TestAgent(object):
         env = MagicMock(spec=Environment)
 
         def env_reset(train_mode):
-            type(env).current_state = PropertyMock(return_value=self._MOCK_INIT_STATE)
+            type(env).current_state = PropertyMock(
+                return_value=self._MOCK_INIT_STATE)
             return self._MOCK_INIT_STATE
 
         def env_step(action):
-            type(env).current_state = PropertyMock(return_value=self._MOCK_NEXT_STATE)
+            type(env).current_state = PropertyMock(
+                return_value=self._MOCK_NEXT_STATE)
             return (self._MOCK_NEXT_STATE, self._MOCK_REWARD, self._MOCK_DONE)
 
         type(env).current_state = PropertyMock(return_value=None)
         env.reset.side_effect = env_reset
         env.step.side_effect = env_step
 
-        vision = Vision(lambda s: self._MOCK_VISION_STATE, lambda r: self._MOCK_VISION_REWARD)
+        vision = Vision(lambda s: self._MOCK_VISION_STATE,
+                        lambda r: self._MOCK_VISION_REWARD)
 
         model = MagicMock(spec=Policy)
         model.select_action.return_value = self._MOCK_ACTION
@@ -144,7 +149,8 @@ class TestAgent(object):
             self._MOCK_ACTION
         )
 
-        self.transition_env_model_check(transition, env, model, is_model_used=False)
+        self.transition_env_model_check(
+            transition, env, model, is_model_used=False)
 
     def test_do_model(self, agent_mock):
         agent, env, model = agent_mock
@@ -173,7 +179,8 @@ class TestAgent(object):
         agent, env, model = agent_mock
 
         def env_step(action):
-            type(env).current_state = PropertyMock(return_value=self._MOCK_NEXT_STATE)
+            type(env).current_state = PropertyMock(
+                return_value=self._MOCK_NEXT_STATE)
             return (self._MOCK_NEXT_STATE, self._MOCK_REWARD, True)
         env.step.side_effect = env_step
 
@@ -183,7 +190,8 @@ class TestAgent(object):
         step = 0
 
         for transition in agent.play(stop):
-            self.transition_env_model_check(transition, env, model, step=step, mock_done=True)
+            self.transition_env_model_check(
+                transition, env, model, step=step, mock_done=True)
 
             step += 1
 

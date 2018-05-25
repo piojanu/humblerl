@@ -10,7 +10,7 @@ class Policy(metaclass=ABCMeta):
     @abstractmethod
     def __call__(self, state):
         """Evaluate policy and return action.
-        
+
         Args:
           state (object): Current world state to start from.
 
@@ -25,7 +25,7 @@ class Planner(metaclass=ABCMeta):
 
     def __init__(self, model):
         """Initialize planner.
-        
+
         Args:
           model (Dynamics): World dynamics model. 
         """
@@ -35,7 +35,7 @@ class Planner(metaclass=ABCMeta):
     @abstractmethod
     def get_policy(self):
         """Passes policy used to select actions.
-        
+
         Return:
           (Policy): Policy.
         """

@@ -18,7 +18,8 @@ class MockOpenAIGymDiscrete(object):
     _MOCK_ACTION_DESCRIPTIONS = None
 
     def __init__(self):
-        self.observation_space = spaces.Box(low=-10, high=10, shape=self._MOCK_STATE.shape)
+        self.observation_space = spaces.Box(
+            low=-10, high=10, shape=self._MOCK_STATE.shape)
 
         self.action_space = spaces.Discrete(n=self._MOCK_ACTION_SIZE)
         self._MOCK_ACTION_DESCRIPTIONS = repr(self.action_space)
@@ -46,9 +47,11 @@ class MockOpenAIGymContinuous(object):
     _MOCK_ACTION_DESCRIPTIONS = None
 
     def __init__(self):
-        self.observation_space = spaces.Box(low=-10, high=10, shape=self._MOCK_STATE.shape)
+        self.observation_space = spaces.Box(
+            low=-10, high=10, shape=self._MOCK_STATE.shape)
 
-        self.action_space = spaces.Box(low=-10, high=10, shape=self._MOCK_ACTION_SIZE)
+        self.action_space = spaces.Box(
+            low=-10, high=10, shape=self._MOCK_ACTION_SIZE)
         self._MOCK_ACTION_DESCRIPTIONS = repr(self.action_space)
 
     def reset(self, train_mode=True):

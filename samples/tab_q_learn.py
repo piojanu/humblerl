@@ -19,7 +19,8 @@ class TabularQLearning(Policy):
 
     def select_action(self, curr_state):
         # Decaying over time random noise for exploration
-        random_noise = np.random.randn(self.Q.shape[1]) * (1./self._episode_count)
+        random_noise = np.random.randn(
+            self.Q.shape[1]) * (1./self._episode_count)
         action = np.argmax(self.Q[curr_state] + random_noise)
         return action
 
@@ -28,7 +29,8 @@ class TabularQLearning(Policy):
         LR = pow(self._lr, self._episode_count/self._decay)
 
         # Update Q-table
-        target = transition.reward + self._gamma * np.max(self.Q[transition.next_state])
+        target = transition.reward + self._gamma * \
+            np.max(self.Q[transition.next_state])
         self.Q[transition.state, transition.action] += \
             LR * (target - self.Q[transition.state, transition.action])
 
@@ -39,7 +41,8 @@ class TabularQLearning(Policy):
 
 if __name__ == "__main__":
     env = OpenAIGymWrapper(gym.make("FrozenLake-v0"))
-    model = TabularQLearning(env.state_space_info.size, env.action_space_info.size)
+    model = TabularQLearning(env.state_space_info.size,
+                             env.action_space_info.size)
     agent = Agent(env, model)
 
     # Seed env and numpy for predictability
