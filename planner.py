@@ -3,6 +3,7 @@ from __future__ import (absolute_import, division,
 
 from abc import ABCMeta, abstractmethod
 
+
 class Policy(metaclass=ABCMeta):
     """Abstract class representing policy in Reinforcement Learning task."""
 
@@ -37,15 +38,5 @@ class Planner(metaclass=ABCMeta):
         
         Return:
           (Policy): Policy.
-        """
-        pass
-
-    @abstractmethod
-    def report_step(self, transition):
-        """Receives step report from RL loop.
-        
-        Args:
-          transition (Transition): Last transition (state, action, reward, next state, is terminal)
-        in RL environment.
         """
         pass
