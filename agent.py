@@ -144,8 +144,7 @@ class Agent(object):
         If -1, then play until env is done. [Default: -1]
 
         Returns:
-            transition (Transition): Transition packed in namedtuple: 
-        state, action, reward, next_state, is_terminal.
+            Nothing
         """
 
         stop = False
@@ -155,5 +154,4 @@ class Agent(object):
             transition = self.do()
             stop = transition.is_terminal
 
-            yield transition
             step += 1
