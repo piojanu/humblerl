@@ -23,15 +23,6 @@ class Policy(metaclass=ABCMeta):
 class Planner(metaclass=ABCMeta):
     """Planner interface to model-based policy learning logic."""
 
-    def __init__(self, model):
-        """Initialize planner.
-
-        Args:
-          model (Dynamics): World dynamics model. 
-        """
-
-        self._model = model
-
     @abstractmethod
     def get_policy(self):
         """Passes policy used to select actions.
