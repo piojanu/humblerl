@@ -6,7 +6,9 @@ from humblerl import Transition
 
 
 class Vision(object):
-    """Vision system entity in Reinforcement Learning task."""
+    """Vision system entity in Reinforcement Learning task.
+       It is responsible for data preprocessing.
+    """
 
     def __init__(self, state_processor=None, reward_processor=None):
         """Initialize vision processors.
@@ -33,7 +35,10 @@ class Vision(object):
 
 
 class Agent(object):
-    """Agent entity in Reinforcement Learning task."""
+    """Agent entity in Reinforcement Learning task.
+       It is responsible for doing actions in given environment using given policy
+       and report results to all Callback object in callback list.
+    """
 
     def __init__(self, env, policy, vision=Vision(), callbacks=[]):
         """Initialize agent object.
@@ -45,6 +50,7 @@ class Agent(object):
         interface.
             vision (Vision): Processes raw environment output
         before passing it to the agent. [Default: Vision()]
+            callbacks (List of Callback): Callback objects which will be informed about steps in environment
         """
 
         self._env = env
@@ -93,7 +99,7 @@ class Agent(object):
         return state
 
     def do(self, action=None):
-        """Take a step in the environment and process output with vision system.
+        """Take a step in the environment, process output with vision system and inform callbacks about step.
 
         Args:
             action (list of floats): Action to perform. In discrete action space
@@ -137,7 +143,7 @@ class Agent(object):
         return transition
 
     def play(self, max_steps=-1):
-        """Python generator. Play agent in environment.
+        """Play agent in environment.
 
         Args:
             max_steps (int): Play until env is done or max_steps is reached.

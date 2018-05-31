@@ -72,7 +72,7 @@ class Environment(metaclass=ABCMeta):
 
     @property
     def current_state(self):
-        """Access model.
+        """Access state.
 
         Returns:
             np.array: Current environment state.

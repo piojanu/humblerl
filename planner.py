@@ -5,7 +5,8 @@ from abc import ABCMeta, abstractmethod
 
 
 class Policy(metaclass=ABCMeta):
-    """Abstract class representing policy in Reinforcement Learning task."""
+    """Abstract class representing policy in Reinforcement Learning task.
+       It is responsible for getting action to take based on state."""
 
     @abstractmethod
     def __call__(self, state):
@@ -21,7 +22,9 @@ class Policy(metaclass=ABCMeta):
 
 
 class Planner(metaclass=ABCMeta):
-    """Planner interface to model-based policy learning logic."""
+    """Planner interface to model-based policy learning logic.
+       It can be parent of Policy object.
+    """
 
     def __init__(self, model):
         """Initialize planner.

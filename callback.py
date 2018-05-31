@@ -6,7 +6,7 @@ class Callback(metaclass=ABCMeta):
 
     @abstractmethod
     def report_step(self, transition):
-        """Receives step report from RL loop.
+        """Receives step report from Agent.
 
         Args:
           transition (Transition): Last transition (state, action, reward, next state, is terminal)
