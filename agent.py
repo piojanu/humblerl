@@ -44,12 +44,9 @@ class Agent(object):
         """Initialize agent object.
 
         Args:
-            env (Environment): Any environment implementing
-        humblerl.environments.Environment interface.
-            policy (Policy): Any policy implementing Policy
-        interface.
-            vision (Vision): Processes raw environment output
-        before passing it to the agent. [Default: Vision()]
+            env (Environment): Any environment implementing humblerl.environments.Environment interface.
+            policy (Policy): Any policy implementing Policy interface.
+            vision (Vision): Processes raw environment output before passing it to the agent. [Default: Vision()]
             callbacks (List of Callback): Callback objects which will be informed about steps in environment
         """
 

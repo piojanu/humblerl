@@ -6,7 +6,8 @@ from abc import ABCMeta, abstractmethod
 
 class Policy(metaclass=ABCMeta):
     """Abstract class representing policy in Reinforcement Learning task.
-       It is responsible for getting action to take based on state."""
+       It is responsible for getting action to take based on state.
+    """
 
     @abstractmethod
     def __call__(self, state):
@@ -16,7 +17,7 @@ class Policy(metaclass=ABCMeta):
           state (object): Current world state to start from.
 
         Returns:
-            list of floats: action to take in the environment.
+          list of floats: action to take in the environment.
         """
         pass
 
@@ -39,7 +40,7 @@ class Planner(metaclass=ABCMeta):
     def get_policy(self):
         """Passes policy used to select actions.
 
-        Return:
+        Returns:
           (Policy): Policy.
         """
         pass
