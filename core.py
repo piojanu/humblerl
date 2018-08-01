@@ -38,8 +38,8 @@ class Callback(metaclass=ABCMeta):
         """Event after Mind was evaluated.
 
         Args:
-            logits (numpy.Array): Actions scores (e.g. unnormalized log probabilities/Q-values/etc.)
-        possibly raw Artificial Neural Net output i.e. logits.
+            logits (np.array): Actions scores (e.g. unnormalized log probabilities/Q-values/etc.)
+                possibly raw Artificial Neural Net output i.e. logits.
             metrics (dict): Planning metrics.
 
         Note:
@@ -66,7 +66,7 @@ class Callback(metaclass=ABCMeta):
 
         Returns:
             dict: Dictionary with logs names and values. Those may be visible in CMD progress bar
-        and saved to log file if specified.
+                and saved to log file if specified.
 
         Note:
             You can assume, that this event occurs after step to terminal state.
@@ -82,7 +82,7 @@ class Callback(metaclass=ABCMeta):
 
         Note:
             You can assume, that this event occurs after specified episodes number or when
-        loop is terminated manually (e.g. by Ctrl+C).
+            loop is terminated manually (e.g. by Ctrl+C).
         """
 
         pass
@@ -130,19 +130,14 @@ class Environment(metaclass=ABCMeta):
 
         Args:
             train_mode (bool): Informs environment if it's training or evaluation
-        mode. (Default: True)
+                mode. (Default: True)
             first_player (int): Index of player who starts game. (Default: 0)
 
         Returns:
-            np.Array: The initial state. 
-            int: Current player, first is 0.
-
-        Note:
-            In child class you MUST set `self._curr_state` to returned initial state.
+            np.array: The initial state. 
+            int: Current player (first is 0).
         """
 
-        # TODO (pj): Is there a better way to set `self._curr_state` then telling user
-        #            to do this manually?
         pass
 
     @abstractmethod
@@ -150,40 +145,65 @@ class Environment(metaclass=ABCMeta):
         """Perform action in environment.
 
         Args:
-            action (list of floats): Action to perform. In discrete action space it's single
-        element list with action number. In continuous case, it's action vector.
+            action (np.array): Action to perform. In discrete action space it's single
+                item with action number. In continuous case, it's action vector.
 
         Returns:
-            np.Array: New state.
-            int: Current player, first is 0.
+            np.array: New state.
+            int: Next player (first is 0).
             float: Reward.
             bool: Flag indicating if episode has ended.
-
-        Note:
-            In child class you MUST set `self._curr_state` to returned new state.
+            object: Environment diagnostic information if available otherwise None.
         """
 
-        # TODO (pj): Is there a better way to set `self._curr_state` then telling user
-        #            to do this manually?
         pass
 
     @property
+    @abstractmethod
     def current_state(self):
-        """Access state.
+        """Access current observable state in which environment is.
 
         Returns:
-            np.array: Current environment state.
+            np.array: Current observable environment state.
         """
 
-        return self._curr_state
+        pass
+
+    @property
+    @abstractmethod
+    def players_number(self):
+        """Access number of players that take actions in this MDP.
+
+        Returns:
+            int: Number of players (first is 0).
+        """
+
+        pass
+
+    @property
+    @abstractmethod
+    def state_space(self):
+        """Access environment state space.
+
+        Returns:
+            np.array: If desecrate state space, then it's one item describing state space size.
+                If continuous, then this is (M + 1) dimensional array, where first M dimensions are
+                state dimensions and last dimension of size 2 keeps respectively [min, max]
+                (inclusive range) values which given state feature can take.
+        """
+
+        pass
 
     @property
     @abstractmethod
     def valid_actions(self):
-        """Access valid actions.
+        """Access currently valid actions.
 
         Returns:
-            np.array: Array with indexes of currently available actions.
+            np.array: If desecrate action space, then it's a 1D array with available action values.
+                If continuous, then this is 2D array, where first dimension has action vector size
+                and second dimension of size 2 keeps respectively [min, max] (inclusive range)
+                values which given action vector element can take.
         """
 
         pass
@@ -197,16 +217,81 @@ class Mind(metaclass=ABCMeta):
         """Do forward pass through agent model, inference/planning on state.
 
         Args:
-            state (numpy.Array): State of game to inference on.
+            state (np.array): State of environment to inference on.
             player (int): Current player index.
             train_mode (bool): Informs planner whether it's in training or evaluation mode.
-        E.g. in evaluation it can optimise graph, disable exploration etc.
+                E.g. in evaluation it can optimise graph, disable exploration etc.
             debug_mode (bool): Informs planner whether it's in debug mode or not.
 
         Returns:
-            numpy.Array: Actions scores (e.g. unnormalized log probabilities/Q-values/etc.)
-        possibly raw Artificial Neural Net output i.e. logits.
+            np.array: Actions scores (e.g. unnormalized log probabilities/Q-values/etc.)
+                possibly raw Artificial Neural Net output i.e. logits.
             dict: Planning metrics, content possibly depended on :param:`debug_mode` value.
+        """
+
+        pass
+
+
+class Model(metaclass=ABCMeta):
+    """Represents some MDP, describes state and action spaces and give access to dynamics."""
+
+    @abstractmethod
+    def simulate(self, state, player, action):
+        """Perform `action` as `player` in `state`. Return outcome.
+
+        Args:
+            state (np.array): State of MDP.
+            player (int): Current player index.
+            action (np.array): Action to perform. In discrete action space it's single
+                item with action number. In continuous case, it's action vector.
+
+        Returns:
+            np.array: New state.
+            int: Next player (first is 0).
+            float: Reward.
+            bool: Flag indicating if episode has ended.
+        """
+
+        pass
+
+    @property
+    @abstractmethod
+    def action_space(self, state):
+        """Access valid actions of given MDP state.
+
+        Args:
+            state (np.array): State of MDP.
+
+        Returns:
+            np.array: If desecrate action space, then it's a 1D array with available action values.
+                If continuous, then this is 2D array, where first dimension has action vector size
+                and second dimension of size 2 keeps respectively [min, max] (inclusive range)
+                values which given action vector element can take.
+        """
+
+        pass
+
+    @property
+    @abstractmethod
+    def players_number(self):
+        """Access number of players that take actions in this MDP.
+
+        Returns:
+            int: Number of players (first is 0).
+        """
+
+        pass
+
+    @property
+    @abstractmethod
+    def state_space(self):
+        """Access environment state space.
+
+        Returns:
+            np.array: If desecrate state space, then it's one item describing state space size.
+                If continuous, then this is (M + 1)-D array, where first M dimensions are
+                state dimensions and last dimension of size 2 keeps respectively [min, max]
+                (inclusive range) values which given state feature can take.
         """
 
         pass
@@ -215,7 +300,7 @@ class Mind(metaclass=ABCMeta):
 class Vision(object):
     """Vision system entity in Reinforcement Learning task.
 
-       It is responsible for data preprocessing.
+       It is responsible for e.g. data preprocessing, feature extraction etc.
     """
 
     def __init__(self, state_processor_fn=None, reward_processor_fn=None):
@@ -223,11 +308,11 @@ class Vision(object):
 
         Args:
             state_processor_fn (function): Function for state processing. It should
-        take raw environment state as an input and return processed state.
-        (Default: None which will result in passing raw state)
+                take raw environment state as an input and return processed state.
+                (Default: None which will result in passing raw state)
             reward_processor_fn (function): Function for reward processing. It should
-        take raw environment reward as an input and return processed reward.
-        (Default: None which will result in passing raw reward)
+                take raw environment reward as an input and return processed reward.
+                (Default: None which will result in passing raw reward)
         """
 
         self._process_state = \
@@ -251,10 +336,10 @@ def ply(env, mind, player=0, policy='deterministic', vision=Vision(), step=0, tr
         vision (Vision): State and reward preprocessing. (Default: no preprocessing)
         step (int): Current step number in this episode, used by some policies. (Default: 0)
         train_mode (bool): Informs env and planner whether it's in training or evaluation mode.
-    (Default: True)
+            (Default: True)
         debug_mode (bool): Informs planner whether it's in debug mode or not. (Default: False)
         callbacks (list of Callback objects): Objects that can listen to events during play.
-    (Default: [])
+            (Default: [])
         **kwargs: Other keyword arguments may be needed depending on chosen policy.
 
     Return:
@@ -275,6 +360,7 @@ def ply(env, mind, player=0, policy='deterministic', vision=Vision(), step=0, tr
           * 'stochastic'   : pass extra kwarg 'temperature', otherwise it's set to 1.
                              You can also anneal temperature using :attr:`decay`:
                              temp * (1. / (1. + decay * step)).
+          * 'proportional' : Same as stochastic, but you normalize logits not exponential.
           * 'egreedy'      : pass extra kwarg 'epsilon', otherwise it's set to 0.5.
                              You can also anneal epsilon using :attr:`decay`:
                              epsilon * (1. / (1. + decay * step)).
@@ -389,29 +475,22 @@ def loop(env, minds, n_episodes=1, max_steps=-1, alternate_players=False, policy
     Args:
         env (Environment): Environment to take actions in.
         minds (Mind or list of Mind objects): Minds to use while deciding on action to take in the env.
-    If more then one, then each will be used one by one starting form index 0.
+            If more then one, then each will be used one by one starting form index 0.
         alternate_players (bool): If players order should be alternated or left unchanged in each
-    episode. (Default: False)
+            episode. (Default: False)
         n_episodes (int): Number of episodes to play. (Default: 1)
         max_steps (int): Maximum number of steps in episode. No limit when -1. (Default: -1)
         policy (string: Describes the way of choosing action from mind predictions (see Note).
         vision (Vision): State and reward preprocessing. (Default: no preprocessing)
         name (string): Name shown in progress bar. (Default: "Loop")
         train_mode (bool): Informs env and planner whether it's in training or evaluation mode.
-    (Default: True)
+            (Default: True)
         debug_mode (bool): Informs planner whether it's in debug mode or not. (Default: False)
         verbose (int): Specify how much information to log (0: nothing, 1: progress bar, 2: logs).
-    (Default: 1)
+            (Default: 1)
         callbacks (list of Callback objects): Objects that can listen to events during play.
-    (Default: [])
+            (Default: [])
         **kwargs: Other keyword arguments may be needed depending on chosen policy.
-
-    Note:
-        Possible `policy` values are:
-          * 'deterministic': default,
-          * 'stochastic'   : pass extra kwarg 'temperature' otherwise it's set to 1.,
-          * 'egreedy'      : pass extra kwarg 'epsilon' otherwise it's set to 0.5,
-          * 'identity'     : forward whatever come from Mind.
     """
 
     # Create callbacks list and "officially start loop"
