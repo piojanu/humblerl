@@ -5,18 +5,16 @@ Straightforward reinforcement learning Python framework. It will provide all the
 
 It's not a deep learning framework! It's designed to work with them to build agents (e.g. PyTorch or TensorFlow).
 
-**Work in progress!** It's not officially released yet. Contributions are welcome :)
+**Work in progress!** It's not officially released yet. Contributions are welcome :smile:
 
 ## How to run?
 ### Dependencies:
 * Tested on python 3.6.4. It _should_ work with Python 2.7 too. 
 * numpy - https://scipy.org/install.html
+* tqdm - https://github.com/tqdm/tqdm
 
 ## Samples:
-We are currently working on research project "Transfer Learning in Reinforcement Learning" and we are developing this small tool as we go. We will publish sample code (how we use this tool) some (not so long) time in the future. You can expect AlphaZero implementation in this framework (it looks really clean, you must believe me!). We will move some generic code from that implementation to this framework.
+We are currently working on research project "Transfer Learning in Reinforcement Learning" and we are developing this small tool as we go. We will publish sample code (how we use this tool) some time in the future. You can expect AlphaZero implementation in this framework. We will move some generic code from that implementation to this framework.
 
 ## What we are currently working on?
-The most important thing now is to implement logging capability. So visualizing and training supervision will be easy-peasy! Idea is to use something in shape of Keras metrics, but we are still thinking.
-
-## Credits
-Thanks [verigak/progress](https://github.com/verigak/progress) for providing us with great progress visualizations!
+The most important thing now is to improve logging and visualization capabilities. So visualizing and training supervision will be easy-peasy! Idea is to use something in shape of Keras metrics and TensorBoard, but we are still working it out. We are waiting for you contribution :smile:
