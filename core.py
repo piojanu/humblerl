@@ -11,7 +11,7 @@ Transition = namedtuple(
 
 
 class Callback(metaclass=ABCMeta):
-    """Callbacks can be used to listen to events during :func:`loop`."""
+    """Callbacks can be used to listen to events during RL loop execution."""
 
     def on_loop_start(self):
         """Event when loop starts.
@@ -157,6 +157,12 @@ class Environment(metaclass=ABCMeta):
         """
 
         pass
+    
+    @abstractmethod
+    def render(self):
+        """Show/print some visual representation of environment's current state."""
+
+        pass
 
     @property
     @abstractmethod
@@ -226,7 +232,7 @@ class Mind(metaclass=ABCMeta):
         Returns:
             np.array: Actions scores (e.g. unnormalized log probabilities/Q-values/etc.)
                 possibly raw Artificial Neural Net output i.e. logits.
-            dict: Planning metrics, content possibly depended on :param:`debug_mode` value.
+            dict: Planning metrics, content possibly depended on `debug_mode` value.
         """
 
         pass
@@ -467,29 +473,31 @@ def ply(env, mind, player=0, policy='deterministic', vision=Vision(), step=0, tr
     return transition
 
 
-def loop(env, minds, n_episodes=1, max_steps=-1, alternate_players=False, policy='deterministic',
-         vision=Vision(), name="Loop", train_mode=True, debug_mode=False, verbose=1, callbacks=[],
-         **kwargs):
+def loop(env, minds, vision=Vision(), n_episodes=1, max_steps=-1, policy='deterministic', name="",
+         alternate_players=False, debug_mode=False, render_mode=False, train_mode=True,
+         verbose=2, callbacks=[], **kwargs):
     """Conduct series of plies (turns taken by each player in order).
 
     Args:
         env (Environment): Environment to take actions in.
         minds (Mind or list of Mind objects): Minds to use while deciding on action to take in the env.
             If more then one, then each will be used one by one starting form index 0.
-        alternate_players (bool): If players order should be alternated or left unchanged in each
-            episode. (Default: False)
+        vision (Vision): State and reward preprocessing. (Default: no preprocessing)
         n_episodes (int): Number of episodes to play. (Default: 1)
         max_steps (int): Maximum number of steps in episode. No limit when -1. (Default: -1)
-        policy (string: Describes the way of choosing action from mind predictions (see Note).
-        vision (Vision): State and reward preprocessing. (Default: no preprocessing)
-        name (string): Name shown in progress bar. (Default: "Loop")
-        train_mode (bool): Informs env and planner whether it's in training or evaluation mode.
+        policy (string): Describes the way of choosing action from mind predictions
+            (see Note section in docstring of `ply` function).
+        name (string): Name shown in progress bar. (Default: "")
+        alternate_players (bool): If players order should be alternated or left unchanged in each
+            episode. It controls if starting player should change after episode. (Default: False)
+        debug_mode (bool): Informs Mind whether it's in debug mode or not. (Default: False)
+        render_mode (bool): If environment should be rendered. (Default: False)
+        train_mode (bool): Informs env and Mind whether they're in training or evaluation mode.
             (Default: True)
-        debug_mode (bool): Informs planner whether it's in debug mode or not. (Default: False)
         verbose (int): Specify how much information to log (0: nothing, 1: progress bar, 2: logs).
-            (Default: 1)
+            (Default: 2)
         callbacks (list of Callback objects): Objects that can listen to events during play.
-            (Default: [])
+            See `Callback` class docstrings. (Default: [])
         **kwargs: Other keyword arguments may be needed depending on chosen policy.
     """
 
@@ -509,6 +517,10 @@ def loop(env, minds, n_episodes=1, max_steps=-1, alternate_players=False, policy
 
             # Play until episode ends or max_steps limit reached
             while max_steps == -1 or step <= max_steps:
+                # Render environment if requested
+                if render_mode:
+                    env.render()
+                
                 # Determine player index and mind
                 if isinstance(minds, (list, tuple)):
                     mind = minds[player]
