@@ -10,11 +10,10 @@ It's not a deep learning framework! It's designed to work with them to build age
 ## How to run?
 ### Dependencies:
 * Tested on python 3.6.4. It _should_ work with Python 2.7 too. 
-* numpy - https://scipy.org/install.html
-* tqdm - https://github.com/tqdm/tqdm
+* See `requirements.txt` for rest of dependencies (note that `pytest` is needed only to run tests).
 
 ## Samples:
-We are currently working on research project "Transfer Learning in Reinforcement Learning" and we are developing this small tool as we go. We will publish sample code (how we use this tool) some time in the future. You can expect AlphaZero implementation in this framework. We will move some generic code from that implementation to this framework.
+We are currently working on research project "Transfer Learning in Reinforcement Learning" and we are developing this small tool as we go. We will publish sample code (how we use this tool) some time in the future. You can expect [AlphaZero](http://tim.hibal.org/blog/alpha-zero-how-and-why-it-works/) and [World Model](https://worldmodels.github.io) implementations in this framework.
 
 ## What we are currently working on?
-The most important thing now is to improve logging and visualization capabilities. So visualizing and training supervision will be easy-peasy! Idea is to use something in shape of Keras metrics and TensorBoard, but we are still working it out. We are waiting for you contribution :smile:
+The most important things now are to improve logging and visualization capabilities, but also add support for more environments. Visualizing and training supervision should be easy-peasy and one should be able to run experiments in many many environments! We are waiting for you contribution :smile:

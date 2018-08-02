@@ -145,8 +145,8 @@ class Environment(metaclass=ABCMeta):
         """Perform action in environment.
 
         Args:
-            action (np.array): Action to perform. In discrete action space it's single
-                item with action number. In continuous case, it's action vector.
+            action (int or np.array): Action to perform. In discrete action space it's integer
+                action number. In continuous case, it's action vector (np.array).
 
         Returns:
             np.array: New state.
@@ -165,29 +165,32 @@ class Environment(metaclass=ABCMeta):
         pass
 
     @property
-    @abstractmethod
     def current_state(self):
         """Access current observable state in which environment is.
 
         Returns:
             np.array: Current observable environment state.
+        
+        Note:
+            In child class just set self._current_state
         """
 
-        pass
+        return self._current_state
 
     @property
-    @abstractmethod
     def players_number(self):
         """Access number of players that take actions in this MDP.
 
         Returns:
             int: Number of players (first is 0).
+        
+        Note:
+            In child class just set `self._players_number`.
         """
 
-        pass
+        return self._players_number
 
     @property
-    @abstractmethod
     def state_space(self):
         """Access environment state space.
 
@@ -196,12 +199,14 @@ class Environment(metaclass=ABCMeta):
                 If continuous, then this is (M + 1) dimensional array, where first M dimensions are
                 state dimensions and last dimension of size 2 keeps respectively [min, max]
                 (inclusive range) values which given state feature can take.
+        
+        Note:
+            In child class just set `self._state_space`.
         """
 
-        pass
+        return self._state_space
 
     @property
-    @abstractmethod
     def valid_actions(self):
         """Access currently valid actions.
 
@@ -210,9 +215,13 @@ class Environment(metaclass=ABCMeta):
                 If continuous, then this is 2D array, where first dimension has action vector size
                 and second dimension of size 2 keeps respectively [min, max] (inclusive range)
                 values which given action vector element can take.
+        
+        Note:
+            In child class just set `self._valid_actions`. If valid actions depend on current
+            state, just override this property.
         """
 
-        pass
+        return self._valid_actions
 
 
 class Mind(metaclass=ABCMeta):
