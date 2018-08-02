@@ -157,7 +157,7 @@ class Environment(metaclass=ABCMeta):
         """
 
         pass
-    
+
     @abstractmethod
     def render(self):
         """Show/print some visual representation of environment's current state."""
@@ -170,7 +170,7 @@ class Environment(metaclass=ABCMeta):
 
         Returns:
             np.array: Current observable environment state.
-        
+
         Note:
             In child class just set self._current_state
         """
@@ -183,7 +183,7 @@ class Environment(metaclass=ABCMeta):
 
         Returns:
             int: Number of players (first is 0).
-        
+
         Note:
             In child class just set `self._players_number`.
         """
@@ -199,7 +199,7 @@ class Environment(metaclass=ABCMeta):
                 If continuous, then this is (M + 1) dimensional array, where first M dimensions are
                 state dimensions and last dimension of size 2 keeps respectively [min, max]
                 (inclusive range) values which given state feature can take.
-        
+
         Note:
             In child class just set `self._state_space`.
         """
@@ -215,7 +215,7 @@ class Environment(metaclass=ABCMeta):
                 If continuous, then this is 2D array, where first dimension has action vector size
                 and second dimension of size 2 keeps respectively [min, max] (inclusive range)
                 values which given action vector element can take.
-        
+
         Note:
             In child class just set `self._valid_actions`. If valid actions depend on current
             state, just override this property.
@@ -529,7 +529,7 @@ def loop(env, minds, vision=Vision(), n_episodes=1, max_steps=-1, policy='determ
                 # Render environment if requested
                 if render_mode:
                     env.render()
-                
+
                 # Determine player index and mind
                 if isinstance(minds, (list, tuple)):
                     mind = minds[player]

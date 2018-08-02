@@ -1,6 +1,6 @@
 import numpy as np
 
-from humblerl import create_gym
+from .. import create_gym
 
 
 class TestGymEnvironment(object):
