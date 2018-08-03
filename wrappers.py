@@ -18,7 +18,9 @@ class GymEnvironment(Environment):
         if isinstance(obs_space, gym.spaces.Discrete):
             self._state_space = np.array([obs_space.n])
         elif isinstance(obs_space, gym.spaces.Box):
-            self._state_space = np.array(list(zip(obs_space.low, obs_space.high)))
+            self._state_space = np.concatenate((
+                np.expand_dims(obs_space.low, axis=-1),
+                np.expand_dims(obs_space.high, axis=-1)), axis=-1)
         else:
             raise ValueError("For OpenAI Gym only discrete and box state spaces are supported")
 
@@ -46,7 +48,7 @@ class GymEnvironment(Environment):
         """
 
         self._current_state = self.env.reset()
-        return self._current_state
+        return self._current_state, 0
 
     def step(self, action):
         """Perform action in environment.

@@ -33,7 +33,7 @@ class TestStoreTransitions2Hdf5(object):
                 is_terminal=(idx + 1) % 16 == 0
             )
             transitions.append(transition)
-            callback.on_step_taken(transition)
+            callback.on_step_taken(transition, None)
         callback.on_loop_finish(False)
 
         h5py_file = h5py.File(HDF5_PATH, "r")
@@ -41,7 +41,7 @@ class TestStoreTransitions2Hdf5(object):
         assert h5py_file.attrs["N_GAMES"] == N_TRANSITIONS // 16
         assert h5py_file.attrs["CHUNK_SIZE"] == CHUNK_SIZE
         assert np.all(h5py_file.attrs["ACTION_SPACE"] == ACTION_SPACE)
-        assert np.all(h5py_file.attrs["STATE_SPACE"] == STATE_SPACE)
+        assert np.all(h5py_file.attrs["STATE_SPACE"] == STATE_SPACE.shape[:-1])
 
         for idx, transition in enumerate(transitions):
             assert np.all(h5py_file['states'][idx] == transition.state)
@@ -74,7 +74,7 @@ class TestStoreTransitions2Hdf5(object):
                 is_terminal=(idx + 1) % 16 == 0
             )
             transitions.append(transition)
-            callback.on_step_taken(transition)
+            callback.on_step_taken(transition, None)
         callback.on_loop_finish(False)
 
         h5py_file = h5py.File(HDF5_PATH, "r")
@@ -82,7 +82,7 @@ class TestStoreTransitions2Hdf5(object):
         assert h5py_file.attrs["N_GAMES"] == N_TRANSITIONS // 16
         assert h5py_file.attrs["CHUNK_SIZE"] == CHUNK_SIZE
         assert np.all(h5py_file.attrs["ACTION_SPACE"] == ACTION_SPACE)
-        assert np.all(h5py_file.attrs["STATE_SPACE"] == STATE_SPACE)
+        assert np.all(h5py_file.attrs["STATE_SPACE"] == STATE_SPACE.shape[:-1])
 
         for idx, transition in enumerate(transitions):
             assert np.all(h5py_file['states'][idx] == transition.state)
@@ -120,7 +120,7 @@ class TestStoreTransitions2Hdf5(object):
                 next_player=0,
                 next_state=next_states[-1],
                 is_terminal=transitions[-1][3]
-            ))
+            ), None)
 
         in_order = True
         h5py_file = h5py.File(HDF5_PATH, "r")

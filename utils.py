@@ -28,8 +28,8 @@ class RandomAgent(Mind):
         if len(self.action_space.shape) == 1:
             one_hot = np.zeros_like(self.action_space)
             one_hot[np.random.choice(self.action_space)] = 1
-            return one_hot
+            return one_hot, None
         elif len(self.action_space.shape) == 2:
-            return np.random.uniform(self.action_space.T[0], self.action_space.T[1])
+            return np.random.uniform(self.action_space.T[0], self.action_space.T[1]), None
         else:
             raise ValueError("Invalid action space!")

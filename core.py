@@ -48,11 +48,13 @@ class Callback(metaclass=ABCMeta):
 
         pass
 
-    def on_step_taken(self, transition):
+    def on_step_taken(self, transition, info):
         """Event after action was taken in environment.
 
         Args:
             transition (Transition): Describes transition that took place.
+            info (object): Environment diagnostic information if available otherwise None.
+
 
         Note:
             Transition and info are returned from `ply` function (look to docstring for more info).
@@ -106,9 +108,9 @@ class CallbackList(object):
         for callback in self.callbacks:
             callback.on_action_planned(logits, metrics)
 
-    def on_step_taken(self, transition):
+    def on_step_taken(self, transition, info):
         for callback in self.callbacks:
-            callback.on_step_taken(transition)
+            callback.on_step_taken(transition, info)
 
     def on_episode_end(self):
         logs = {}
@@ -472,12 +474,12 @@ def ply(env, mind, player=0, policy='deterministic', vision=Vision(), step=0, tr
         raise ValueError("Undefined policy")
 
     # Take chosen action
-    raw_next_state, next_player, raw_reward, done = env.step(action)
+    raw_next_state, next_player, raw_reward, done, info = env.step(action)
 
     # Preprocess data and save in transition
     next_state, reward = vision(raw_next_state, raw_reward)
     transition = Transition(player, curr_state, action, reward, next_player, next_state, done)
-    callbacks_list.on_step_taken(transition)
+    callbacks_list.on_step_taken(transition, info)
 
     return transition
 

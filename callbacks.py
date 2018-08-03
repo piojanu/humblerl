@@ -61,7 +61,7 @@ class BasicStats(Callback):
     def __init__(self, save_path=None):
         self._reset()
 
-    def on_step_taken(self, transition):
+    def on_step_taken(self, transition, info):
         self.steps += 1
         self.rewards.append(transition.reward)
 
@@ -125,7 +125,7 @@ class StoreTransitions2Hdf5(Callback):
         self.out_file.attrs["N_GAMES"] = 0
         self.out_file.attrs["CHUNK_SIZE"] = chunk_size
         self.out_file.attrs["ACTION_SPACE"] = action_space
-        self.out_file.attrs["STATE_SPACE"] = state_space
+        self.out_file.attrs["STATE_SPACE"] = state_space_shape
 
         # Create datasets for states, next_states and transitions
         # NOTE: We save states as np.uint8 dtype because those are RGB pixel values.
@@ -146,7 +146,7 @@ class StoreTransitions2Hdf5(Callback):
         self.next_states = []
         self.transitions = []
 
-    def on_step_taken(self, transition):
+    def on_step_taken(self, transition, info):
         self.states.append(transition.state)
         self.next_states.append(transition.next_state)
         self.transitions.append(
