@@ -14,11 +14,12 @@ class TestStoreTransitions2Hdf5(object):
         ACTION_SPACE = np.array([1, 2, 3])
         STATE_SPACE = np.zeros((8, 8, 3, 2))
         STATE_SPACE[:] = np.array([0, 255])
+        STATE_SPACE_SHAPE = STATE_SPACE.shape[:-1]
         MIN_TRANSITIONS = 96
         CHUNK_SIZE = 48
         N_TRANSITIONS = 1024
 
-        callback = StoreTransitions2Hdf5(ACTION_SPACE, STATE_SPACE, HDF5_PATH,
+        callback = StoreTransitions2Hdf5(ACTION_SPACE, STATE_SPACE_SHAPE, HDF5_PATH,
                                          shuffle=False, min_transitions=MIN_TRANSITIONS,
                                          chunk_size=CHUNK_SIZE, dtype=np.uint8)
         transitions = []
@@ -41,7 +42,7 @@ class TestStoreTransitions2Hdf5(object):
         assert h5py_file.attrs["N_GAMES"] == N_TRANSITIONS // 16
         assert h5py_file.attrs["CHUNK_SIZE"] == CHUNK_SIZE
         assert np.all(h5py_file.attrs["ACTION_SPACE"] == ACTION_SPACE)
-        assert np.all(h5py_file.attrs["STATE_SPACE"] == STATE_SPACE.shape[:-1])
+        assert np.all(h5py_file.attrs["STATE_SHAPE"] == STATE_SPACE_SHAPE)
 
         for idx, transition in enumerate(transitions):
             assert np.all(h5py_file['states'][idx] == transition.state)
@@ -55,11 +56,12 @@ class TestStoreTransitions2Hdf5(object):
         ACTION_SPACE = np.array([1, 2, 3])
         STATE_SPACE = np.zeros((4, 2))
         STATE_SPACE[:] = np.array([-1, 1])
+        STATE_SPACE_SHAPE = STATE_SPACE.shape[:-1]
         MIN_TRANSITIONS = 96
         CHUNK_SIZE = 48
         N_TRANSITIONS = 1024
 
-        callback = StoreTransitions2Hdf5(ACTION_SPACE, STATE_SPACE, HDF5_PATH,
+        callback = StoreTransitions2Hdf5(ACTION_SPACE, STATE_SPACE_SHAPE, HDF5_PATH,
                                          shuffle=False, min_transitions=MIN_TRANSITIONS,
                                          chunk_size=CHUNK_SIZE, dtype=np.float)
         transitions = []
@@ -82,7 +84,7 @@ class TestStoreTransitions2Hdf5(object):
         assert h5py_file.attrs["N_GAMES"] == N_TRANSITIONS // 16
         assert h5py_file.attrs["CHUNK_SIZE"] == CHUNK_SIZE
         assert np.all(h5py_file.attrs["ACTION_SPACE"] == ACTION_SPACE)
-        assert np.all(h5py_file.attrs["STATE_SPACE"] == STATE_SPACE.shape[:-1])
+        assert np.all(h5py_file.attrs["STATE_SHAPE"] == STATE_SPACE_SHAPE)
 
         for idx, transition in enumerate(transitions):
             assert np.all(h5py_file['states'][idx] == transition.state)
@@ -96,11 +98,12 @@ class TestStoreTransitions2Hdf5(object):
         ACTION_SPACE = np.array([1, 2, 3])
         STATE_SPACE = np.zeros((4, 2))
         STATE_SPACE[:] = np.array([-1, 1])
+        STATE_SPACE_SHAPE = STATE_SPACE.shape[:-1]
         MIN_TRANSITIONS = 48
         CHUNK_SIZE = 48
         N_TRANSITIONS = 48
 
-        callback = StoreTransitions2Hdf5(ACTION_SPACE, STATE_SPACE, HDF5_PATH,
+        callback = StoreTransitions2Hdf5(ACTION_SPACE, STATE_SPACE_SHAPE, HDF5_PATH,
                                          shuffle=True, min_transitions=MIN_TRANSITIONS,
                                          chunk_size=CHUNK_SIZE, dtype=np.float)
 

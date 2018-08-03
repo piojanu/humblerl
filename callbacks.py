@@ -86,13 +86,13 @@ class BasicStats(Callback):
 class StoreTransitions2Hdf5(Callback):
     """Save transitions to HDF5 file."""
 
-    def __init__(self, action_space, state_space, out_path,
+    def __init__(self, action_space, state_shape, out_path,
                  shuffle=True, min_transitions=10000, chunk_size=128, dtype=np.uint8):
         """Save transitions to HDF5 file.
 
         Args:
             action_space (np.ndarray): Action space of Environment.
-            state_space (np.ndarray): State space of Environment.
+            state_shape (tuple): Shape of environment's state.
             out_path (str): Path to HDF5 file where transition will be stored.
             shuffle (bool): If data should be shuffled (in subsets of `min_transitions` number of
                 transitions). (Default: True)
@@ -113,7 +113,6 @@ class StoreTransitions2Hdf5(Callback):
         self.min_transitions = min_transitions
         self.state_dtype = dtype
         transition_columns = ["player", "action", "reward", "is_terminal"]
-        state_space_shape = state_space.shape[:-1]
 
         # Make sure that path to out file exists
         if not os.path.exists(os.path.dirname(out_path)):
@@ -125,16 +124,16 @@ class StoreTransitions2Hdf5(Callback):
         self.out_file.attrs["N_GAMES"] = 0
         self.out_file.attrs["CHUNK_SIZE"] = chunk_size
         self.out_file.attrs["ACTION_SPACE"] = action_space
-        self.out_file.attrs["STATE_SPACE"] = state_space_shape
+        self.out_file.attrs["STATE_SHAPE"] = state_shape
 
         # Create datasets for states, next_states and transitions
         # NOTE: We save states as np.uint8 dtype because those are RGB pixel values.
         self.out_states = self.out_file.create_dataset(
-            name="states", dtype=dtype, chunks=(chunk_size, *state_space_shape),
-            shape=(self.dataset_size, *state_space_shape), maxshape=(None, *state_space_shape))
+            name="states", dtype=dtype, chunks=(chunk_size, *state_shape),
+            shape=(self.dataset_size, *state_shape), maxshape=(None, *state_shape))
         self.out_next_states = self.out_file.create_dataset(
-            name="next_states", dtype=dtype, chunks=(chunk_size, *state_space_shape),
-            shape=(self.dataset_size, *state_space_shape), maxshape=(None, *state_space_shape))
+            name="next_states", dtype=dtype, chunks=(chunk_size, *state_shape),
+            shape=(self.dataset_size, *state_shape), maxshape=(None, *state_shape))
         self.out_transitions = self.out_file.create_dataset(
             name="transitions", dtype="f", chunks=(chunk_size, len(transition_columns)),
             shape=(self.dataset_size, len(transition_columns)), maxshape=(None, len(transition_columns)))
