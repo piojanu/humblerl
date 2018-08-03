@@ -208,7 +208,7 @@ class Environment(metaclass=ABCMeta):
 
     @property
     def valid_actions(self):
-        """Access currently valid actions.
+        """Access currently (this state) valid actions.
 
         Returns:
             np.array: If desecrate action space, then it's a 1D array with available action values.

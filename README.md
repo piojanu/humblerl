@@ -11,7 +11,7 @@ It's not a deep learning framework! It's designed to work with them to build age
 
 ## How to run?
 ### Dependencies:
-* Unit-tested for Python 3.4, 3.5, 3.6 versions. Python 2 isn't supported.
+* Unit-tested for Python 3.5 and 3.6 versions. Python 2 isn't supported.
 * See `requirements.txt` for rest of dependencies (note that `pytest` is needed only to run tests).
 
 Run `pytest` in repo root directory.
