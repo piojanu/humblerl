@@ -26,7 +26,9 @@ class RandomAgent(Mind):
         """
 
         if len(self.action_space.shape) == 1:
-            return np.random.choice(self.action_space)
+            one_hot = np.zeros_like(self.action_space)
+            one_hot[np.random.choice(self.action_space)] = 1
+            return one_hot
         elif len(self.action_space.shape) == 2:
             return np.random.uniform(self.action_space.T[0], self.action_space.T[1])
         else:
