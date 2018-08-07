@@ -18,7 +18,7 @@ class TestGymEnvironment(object):
              [-0.419,  0.419], [-3.40282347e+38,  3.40282347e+38]]), atol=1e-3)
         assert np.all(env.valid_actions == np.array([0, 1]))
 
-        state = env.reset()
+        state, _ = env.reset()
         assert np.all(env.current_state == state)
 
         for action in env.valid_actions:
@@ -36,7 +36,7 @@ class TestGymEnvironment(object):
         assert np.all(env.state_space == np.array([16]))
         assert np.all(env.valid_actions == np.array([0, 1, 2, 3]))
 
-        state = env.reset()
+        state, _ = env.reset()
         assert np.all(env.current_state == state)
 
         for action in env.valid_actions:
