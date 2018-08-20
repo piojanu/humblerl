@@ -1,4 +1,5 @@
 import gym
+import gym_sokoban
 import numpy as np
 
 from .core import Environment
