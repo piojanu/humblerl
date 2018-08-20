@@ -1,4 +1,5 @@
 import gym
+import gym_sokoban
 import numpy as np
 
 from .core import Environment
@@ -22,14 +23,16 @@ class GymEnvironment(Environment):
                 np.expand_dims(obs_space.low, axis=-1),
                 np.expand_dims(obs_space.high, axis=-1)), axis=-1)
         else:
-            raise ValueError("For OpenAI Gym only discrete and box state spaces are supported")
+            raise ValueError(
+                "For OpenAI Gym only discrete and box state spaces are supported")
 
         # Get action space
         act_space = self.env.action_space
         if isinstance(act_space, gym.spaces.Discrete):
             self._valid_actions = np.array(list(range(act_space.n)))
         else:
-            raise ValueError("For OpenAI Gym only discrete action space is supported")
+            raise ValueError(
+                "For OpenAI Gym only discrete action space is supported")
 
     def reset(self, train_mode=True, first_player=0):
         """Reset environment and return a first state.
