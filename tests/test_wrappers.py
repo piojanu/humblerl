@@ -61,21 +61,3 @@ class TestGymEnvironment(object):
             state, next_player, reward, done, info = env.step(action)
             assert np.all(env.current_state == state)
             assert next_player == 0
-
-    def test_sokoban_env(self):
-        """Tests box state space and discrete action space handling,
-        all properties, reset, step and create_gym methods."""
-
-        env = create_gym("Sokoban-v0")
-
-        assert env.players_number == 1
-        assert np.all(env.state_space.shape == (160, 160, 3, 2))
-        assert np.all(env.valid_actions == np.array(range(8)))
-
-        state, _ = env.reset()
-        assert np.all(env.current_state == state)
-
-        for action in env.valid_actions:
-            state, next_player, reward, done, info = env.step(action)
-            assert np.all(env.current_state == state)
-            assert next_player == 0
