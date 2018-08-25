@@ -1,3 +1,0 @@
-[submodule "third_party/gym-sokoban"]
-	path = third_party/gym-sokoban
-	url = https://github.com/mpSchrader/gym-sokoban
