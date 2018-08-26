@@ -57,7 +57,7 @@ class Callback(metaclass=ABCMeta):
 
 
         Note:
-            Transition and info are returned from `ply` function (look to docstring for more info).
+            Transition is returned from `ply` function (look to docstring for more info).
             Also, you can assume, that this event occurs always after action planned.
         """
 
@@ -127,6 +127,12 @@ class Environment(metaclass=ABCMeta):
     """Abstract class for environments."""
 
     @abstractmethod
+    def render(self):
+        """Show/print some visual representation of environment's current state."""
+
+        pass
+
+    @abstractmethod
     def reset(self, train_mode=True, first_player=0):
         """Reset environment and return a first state.
 
@@ -160,11 +166,18 @@ class Environment(metaclass=ABCMeta):
 
         pass
 
-    @abstractmethod
-    def render(self):
-        """Show/print some visual representation of environment's current state."""
+    @property
+    def current_player(self):
+        """Access current player index in environment state.
 
-        pass
+        Returns:
+            int: Current player (first is 0).
+
+        Note:
+            In child class just set self._current_player
+        """
+
+        return self._current_player
 
     @property
     def current_state(self):
@@ -341,14 +354,13 @@ class Vision(object):
         return self._process_state(state), self._process_reward(reward)
 
 
-def ply(env, mind, player=0, policy='deterministic', vision=Vision(), step=0, train_mode=True,
+def ply(env, mind, policy='deterministic', vision=Vision(), step=0, train_mode=True,
         debug_mode=False, callbacks=[], **kwargs):
     """Conduct single ply (turn taken by one of the players).
 
     Args:
         env (Environment): Environment to take actions in.
         mind (Mind): Mind to use while deciding on action to take in the env.
-        player (int): Player index which ply this is. (Default: 0)
         policy (string: Describes the way of choosing action from mind predictions (see Note).
         vision (Vision): State and reward preprocessing. (Default: no preprocessing)
         step (int): Current step number in this episode, used by some policies. (Default: 0)
@@ -387,11 +399,12 @@ def ply(env, mind, player=0, policy='deterministic', vision=Vision(), step=0, tr
     # Create callbacks list
     callbacks_list = CallbackList(callbacks)
 
-    # Get and preprocess current state
+    # Get current player and current state (preprocess it)
+    curr_player = env.current_player
     curr_state, _ = vision(env.current_state)
 
     # Infer what to do
-    logits, metrics = mind.plan(curr_state, player, train_mode, debug_mode)
+    logits, metrics = mind.plan(curr_state, curr_player, train_mode, debug_mode)
     callbacks_list.on_action_planned(logits, metrics)
 
     # Get valid actions and logits of those actions
@@ -445,7 +458,7 @@ def ply(env, mind, player=0, policy='deterministic', vision=Vision(), step=0, tr
 
         # With probability of epsilon...
         if np.random.rand(1) < eps:
-            # ...sample random action, otherwise
+            # ...sample random action, otherwise...
             return np.random.choice(valid_actions)
         else:
             # ...choose action greedily
@@ -478,7 +491,7 @@ def ply(env, mind, player=0, policy='deterministic', vision=Vision(), step=0, tr
 
     # Preprocess data and save in transition
     next_state, reward = vision(raw_next_state, raw_reward)
-    transition = Transition(player, curr_state, action, reward, next_player, next_state, done)
+    transition = Transition(curr_player, curr_state, action, reward, next_player, next_state, done)
     callbacks_list.on_step_taken(transition, info)
 
     return transition
@@ -491,8 +504,9 @@ def loop(env, minds, vision=Vision(), n_episodes=1, max_steps=-1, policy='determ
 
     Args:
         env (Environment): Environment to take actions in.
-        minds (Mind or list of Mind objects): Minds to use while deciding on action to take in the env.
-            If more then one, then each will be used one by one starting form index 0.
+        minds (Mind or list of Mind objects): Minds to use while deciding on action to take in the
+            environment. If list, then number of minds must be equal to number of players. Then each
+            mind is chosen according to current player index.
         vision (Vision): State and reward preprocessing. (Default: no preprocessing)
         n_episodes (int): Number of episodes to play. (Default: 1)
         max_steps (int): Maximum number of steps in episode. No limit when -1. (Default: -1)
@@ -540,7 +554,7 @@ def loop(env, minds, vision=Vision(), n_episodes=1, max_steps=-1, policy='determ
 
                 # Conduct ply and update next player
                 transition = ply(
-                    env, mind, player, policy, vision, step, train_mode, debug_mode, callbacks, **kwargs)
+                    env, mind, policy, vision, step, train_mode, debug_mode, callbacks, **kwargs)
                 player = transition.next_player
 
                 # Increment step counter
