@@ -25,13 +25,17 @@ class CSVSaverWrapper(CallbackList):
         self.history = []
 
     def on_episode_end(self):
-        logs = self.callbacks[0].on_episode_end()
+        logs = self.unwrapped.on_episode_end()
         self.history.append(logs)
         return logs
 
     def on_loop_finish(self, is_aborted):
         self._store()
-        return self.callbacks[0].on_loop_finish(is_aborted)
+        return self.unwrapped.on_loop_finish(is_aborted)
+
+    @property
+    def unwrapped(self):
+        return self.callbacks[0]
 
     def _store(self):
         if not os.path.isfile(self.path):
@@ -58,7 +62,7 @@ class BasicStats(Callback):
       * min reward.
     """
 
-    def __init__(self, save_path=None):
+    def on_loop_start(self):
         self._reset()
 
     def on_step_taken(self, transition, info):
@@ -74,9 +78,6 @@ class BasicStats(Callback):
 
         self._reset()
         return logs
-
-    def on_loop_finish(self, is_aborted):
-        self._reset()
 
     def _reset(self):
         self.steps = 0

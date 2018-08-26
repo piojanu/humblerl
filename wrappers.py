@@ -13,6 +13,7 @@ class GymEnvironment(Environment):
 
         self.env = env
         self._players_number = 1
+        self._current_player = 0
 
         # Get state space
         obs_space = self.env.observation_space
