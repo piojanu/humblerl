@@ -1,13 +1,15 @@
 import argparse
 import cma
 import humblerl as hrl
-import numpy as np
 import logging as log
+import numpy as np
 import os.path
 import pickle
 
+from functools import partial
 from humblerl import Callback, Mind
-
+from multiprocessing import Pool
+from tqdm import tqdm
 
 def compute_ranks(x):
     """Computes fitness ranks in rage: [0, len(x))."""
@@ -127,6 +129,17 @@ class ReturnTracker(Callback):
     def value(self):
         return self.ret
 
+def objective(weights, game_name, nn_dims):
+    env = hrl.create_gym(game_name)
+    
+    nn = NN(*nn_dims)
+    nn.set_weights(weights)
+
+    tracker = ReturnTracker()
+    
+    hrl.loop(env, nn, verbose=0, callbacks=[tracker])
+    return tracker.value
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
@@ -136,6 +149,8 @@ if __name__ == "__main__":
                         help='number of epochs to train (default: 100)')
     parser.add_argument('--popsize', type=int, default=100, metavar='N',
                         help='population size (default: 100)')
+    parser.add_argument('--processes', type=int, default=None, metavar='N',
+                        help='size of process pool for evaluation (default: CPU count')
     parser.add_argument('--decay', type=float, default=0.01, metavar='L2',
                         help='L2 weight decay rate (default: 0.01)')
     parser.add_argument('--h_dim', type=int, default=16, metavar='N',
@@ -149,43 +164,39 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Configure logger
-    log.basicConfig(level=log.DEBUG if args.debug else log.INFO,
+    log.basicConfig(level=log.DEBUG if args.debug else log.WARNING,
                     format="[%(levelname)s]: %(message)s")
 
     # Book keeping variables
     best_return = float('-inf')
     
-    # Create environment
+    # Create environment to get state-action space info
     env = hrl.create_gym(args.game_name)
-    
-    # Create template NN and return tracker
-    nn = NN(env.state_space.shape[0], args.h_dim, len(env.valid_actions))
-    tracker = ReturnTracker()
-    log.debug("Created mind (NN) with %d parameters (weights).", nn.n_weights)
+    nn_dims = (env.state_space.shape[0], args.h_dim, len(env.valid_actions))
+
+    # Create neural net to get number of weights
+    nn = NN(*nn_dims)
+    n_weights = nn.n_weights
     
     # Load CMA-ES solver if ckpt available
     if args.ckpt and os.path.isfile(args.ckpt):
         solver = CMAES.load_ckpt(args.ckpt)
         log.info("Loaded solver from ckpt (NOTE: pop. size and l2 decay was also loaded).")
     else:
-        solver = CMAES(nn.n_weights, popsize=args.popsize, weight_decay=args.decay)
+        solver = CMAES(n_weights, popsize=args.popsize, weight_decay=args.decay)
         log.info("Created solver with pop. size: %d and l2 decay: %f.", args.popsize, args.decay)
 
     # Train for N epochs
-    for epoch in range(args.epochs):
+    pbar = tqdm(range(args.epochs))
+    for epoch in pbar:
         # Get new population
         population = solver.ask()
-        returns = []
-        for itr, entity in enumerate(population):
-            nn.set_weights(entity)
 
-            # Evaluate entity
-            hrl.loop(env, nn, verbose=0, callbacks=[tracker])
-            returns.append(tracker.value)
-            log.debug("Evaluated entity %03d, reward: %f", itr + 1, tracker.value)
+        with Pool(processes=args.processes) as pool:
+            returns = pool.map(
+                partial(objective, game_name=args.game_name, nn_dims=nn_dims), population)
 
-        log.info("Best entity in epoch %03d return: %f, best return so far: %f.",
-                 epoch + 1, max(returns), best_return)
+        pbar.set_postfix(best=best_return, current=max(returns))
         best_return = max(best_return, max(returns))
 
         # Update solver
@@ -197,6 +208,7 @@ if __name__ == "__main__":
 
         if args.render:
             # Evaluate current parameters with render
+            tracker = ReturnTracker()
             nn.set_weights(solver.current_param())
             hrl.loop(env, nn, render_mode=True, verbose=0, callbacks=[tracker])
             log.info("Current parameters (weights) return: %f.", tracker.value)
