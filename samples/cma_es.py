@@ -80,7 +80,7 @@ class CMAES:
         return pickle.load(open(os.path.abspath(path), 'rb'))
 
 
-class Liniear(Mind):
+class LiniearModel(Mind):
     """Simple Artificial Neural Net agent."""
 
     def __init__(self, input_dim, output_dim):
@@ -114,16 +114,6 @@ class ReturnTracker(Callback):
         return {"return": self.ret}
 
 
-def objective(weights):
-    env = hrl.create_gym("CartPole-v0")
-
-    mind = Liniear(env.state_space.shape[0], len(env.valid_actions))
-    mind.set_weights(weights)
-
-    history = hrl.loop(env, mind, verbose=0, callbacks=[ReturnTracker()])
-    return history['return'][0]
-
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
     parser.add_argument('--epochs', type=int, default=10, metavar='N',
@@ -151,7 +141,7 @@ if __name__ == "__main__":
 
     # Create environment and mind
     env = hrl.create_gym("CartPole-v0")
-    mind = Liniear(env.state_space.shape[0], len(env.valid_actions))
+    mind = LiniearModel(env.state_space.shape[0], len(env.valid_actions))
 
     # Load CMA-ES solver if ckpt available
     if args.ckpt and os.path.isfile(args.ckpt):
@@ -167,9 +157,25 @@ if __name__ == "__main__":
         # Get new population
         population = solver.ask()
 
-        with Pool(processes=args.processes) as pool:
-            returns = pool.map(objective, population)
+        # Evaluate population in parallel
+        def env_factory():
+            return hrl.create_gym("CartPole-v0")
 
+        def mind_factory(w):
+            mind.set_weights(w)
+            return mind
+
+        hists = hrl.pool(
+            env_factory,
+            mind_factory,
+            jobs=population,
+            processes=args.processes,
+            verbose=0,
+            callbacks=[ReturnTracker()]
+        )
+        returns = [hist['return'][0] for hist in hists]
+
+        # Print logs and update best return
         pbar.set_postfix(best=best_return, current=max(returns))
         best_return = max(best_return, max(returns))
 
@@ -177,6 +183,7 @@ if __name__ == "__main__":
         solver.tell(returns)
 
         if args.ckpt:
+            # Save solver in given path
             solver.save_ckpt(args.ckpt)
             log.debug("Saved checkpoint in path: %s", args.ckpt)
 
