@@ -4,5 +4,7 @@ python:
   - "3.6"
 install:
   - pip install -r requirements.txt
+  - pip install -r samples/requirements.txt
 script:
   - pytest
+  - PYTHONPATH=.. python samples/cma_es.py --epochs 5 --popsize 50 

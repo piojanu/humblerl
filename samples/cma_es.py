@@ -185,3 +185,6 @@ if __name__ == "__main__":
             mind.set_weights(solver.current_param())
             history = hrl.loop(env, mind, render_mode=True, verbose=0, callbacks=[ReturnTracker()])
             log.info("Current parameters (weights) return: %f.", history['return'][0])
+
+    # If environment wasn't solved then exit with error
+    assert best_return == 200, "Environment wasn't solved!"
