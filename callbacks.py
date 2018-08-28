@@ -24,14 +24,13 @@ class CSVSaverWrapper(CallbackList):
         self.only_last = only_last
         self.history = []
 
-    def on_episode_end(self):
-        logs = self.unwrapped.on_episode_end()
-        self.history.append(logs)
-        return logs
+    def on_episode_end(self, episode, train_mode):
+        self.unwrapped.on_episode_end(episode, train_mode)
+        self.history.append(self.unwrapped.metrics)
 
-    def on_loop_finish(self, is_aborted):
+    def on_loop_end(self, is_aborted):
         self._store()
-        return self.unwrapped.on_loop_finish(is_aborted)
+        self.unwrapped.on_loop_end(is_aborted)
 
     @property
     def unwrapped(self):
@@ -62,21 +61,21 @@ class BasicStats(Callback):
       * min reward.
     """
 
-    def on_loop_start(self):
+    def on_episode_start(self, episode, train_mode):
         self._reset()
 
-    def on_step_taken(self, transition, info):
+    def on_step_taken(self, step, transition, info):
         self.steps += 1
         self.rewards.append(transition.reward)
 
-    def on_episode_end(self):
+    @property
+    def metrics(self):
         logs = {}
         logs["# steps"] = self.steps
         logs["return"] = np.sum(self.rewards)
         logs["max reward"] = np.max(self.rewards)
         logs["min reward"] = np.min(self.rewards)
 
-        self._reset()
         return logs
 
     def _reset(self):
@@ -85,7 +84,21 @@ class BasicStats(Callback):
 
 
 class StoreTransitions2Hdf5(Callback):
-    """Save transitions to HDF5 file."""
+    """Save transitions to HDF5 file in three datasets:
+        * 'states': Keeps transition's state (e.g. image).
+        * 'next_states': Keeps transition's next state (e.g. image).
+        * 'transitions': Keeps additional information about transition
+                         (i.e. player id, action, reward, is_terminal).
+        Datasets are organized in such a way, that you can access transition 'I' by accessing
+        'I'-th position in all three datasets.
+
+        HDF5 file also keeps meta-informations (attributes) as such:
+        * 'N_TRANSITIONS': Datasets size (number of transitions).
+        * 'N_GAMES': From how many games those transitions come from.
+        * 'CHUNK_SIZE': HDF5 file chunk size (batch size should be multiple of it).
+        * 'ACTION_SPACE': Action space taken from 'humblerl.Environment'.
+        * 'STATE_SHAPE': Shape of environment's state ('(next_)states' dataset element shape).
+    """
 
     def __init__(self, action_space, state_shape, out_path,
                  shuffle=True, min_transitions=10000, chunk_size=128, dtype=np.uint8):
@@ -146,7 +159,7 @@ class StoreTransitions2Hdf5(Callback):
         self.next_states = []
         self.transitions = []
 
-    def on_step_taken(self, transition, info):
+    def on_step_taken(self, step, transition, info):
         self.states.append(transition.state)
         self.next_states.append(transition.next_state)
         self.transitions.append(
@@ -159,7 +172,7 @@ class StoreTransitions2Hdf5(Callback):
         if self.transition_count % self.min_transitions == 0:
             self._save_chunk()
 
-    def on_loop_finish(self, is_aborted):
+    def on_loop_end(self, is_aborted):
         if len(self.states) > 0:
             self._save_chunk()
 

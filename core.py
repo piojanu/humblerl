@@ -22,62 +22,8 @@ class Callback(metaclass=ABCMeta):
 
         pass
 
-    def on_episode_start(self, train_mode):
-        """Event when episode starts.
-
-        Args:
-            train_mode (bool): Informs whether episode is in training or evaluation mode.
-
-        Note:
-            You can assume, that this event occurs always before any action is taken in episode.
-        """
-
-        pass
-
-    def on_action_planned(self, logits, metrics):
-        """Event after Mind was evaluated.
-
-        Args:
-            logits (np.array): Actions scores (e.g. unnormalized log probabilities/Q-values/etc.)
-                possibly raw Artificial Neural Net output i.e. logits.
-            metrics (dict): Planning metrics.
-
-        Note:
-            You can assume, that this event occurs always before step finish.
-        """
-
-        pass
-
-    def on_step_taken(self, transition, info):
-        """Event after action was taken in environment.
-
-        Args:
-            transition (Transition): Describes transition that took place.
-            info (object): Environment diagnostic information if available otherwise None.
-
-
-        Note:
-            Transition is returned from `ply` function (look to docstring for more info).
-            Also, you can assume, that this event occurs always after action planned.
-        """
-
-        pass
-
-    def on_episode_end(self):
-        """Event after environment was reset.
-
-        Returns:
-            dict: Dictionary with logs names and values. Those may be visible in CMD progress bar
-                and saved to log file if specified.
-
-        Note:
-            You can assume, that this event occurs after step to terminal state.
-        """
-
-        return {}
-
-    def on_loop_finish(self, is_aborted):
-        """Event after  was reset.
+    def on_loop_end(self, is_aborted):
+        """Event when loop finish.
 
         Args:
             is_aborted (bool): Flag indication if loop has finished as planed or was terminated.
@@ -88,6 +34,75 @@ class Callback(metaclass=ABCMeta):
         """
 
         pass
+
+    def on_episode_start(self, episode, train_mode):
+        """Event when episode starts.
+
+        Args:
+            episode (int): Episode number.
+            train_mode (bool): Informs whether episode is in training or evaluation mode.
+
+        Note:
+            You can assume, that this event occurs always before any action is taken in episode.
+        """
+
+        pass
+
+    def on_episode_end(self, episode, train_mode):
+        """Event after environment was reset.
+        
+        Args:
+            episode (int): Episode number.
+            train_mode (bool): Informs whether episode is in training or evaluation mode.
+
+        Note:
+            You can assume, that this event occurs after step to terminal state.
+        """
+
+        pass
+
+    def on_action_planned(self, step, logits, info):
+        """Event after Mind was evaluated.
+
+        Args:
+            step (int): Step number.
+            logits (np.array): Actions scores (e.g. unnormalized log probabilities/Q-values/etc.)
+                raw values returned from 'Mind.plan(...)'.
+            info (object): Mind's extra information, may be None.
+
+        Note:
+            You can assume, that this event occurs always before step finish.
+        """
+
+        pass
+
+    def on_step_taken(self, step, transition, info):
+        """Event after action was taken in environment.
+
+        Args:
+            step (int): Step number.
+            transition (Transition): Describes transition that took place.
+            info (object): Environment diagnostic information if available otherwise None.
+
+        Note:
+            Transition is returned from `ply` function (look to docstring for more info).
+            Also, you can assume, that this event occurs always after action was planned.
+        """
+
+        pass
+
+    @property
+    def metrics(self):
+        """Returns evaluation/training metrics.
+
+        Returns:
+            dict: Dictionary with logs names and values. Those will be visible in CMD progress bar.
+        
+        Note:
+            Those values are stored and returned from 'humblerl.loop(...)' as evaluation history.
+        """
+
+        return {}
 
 
 class CallbackList(object):
@@ -100,28 +115,32 @@ class CallbackList(object):
         for callback in self.callbacks:
             callback.on_loop_start()
 
-    def on_episode_start(self, train_mode):
+    def on_loop_end(self, is_aborted):
         for callback in self.callbacks:
-            callback.on_episode_start(train_mode)
+            callback.on_loop_end(is_aborted)
 
-    def on_action_planned(self, logits, metrics):
+    def on_episode_start(self, episode, train_mode):
         for callback in self.callbacks:
-            callback.on_action_planned(logits, metrics)
+            callback.on_episode_start(episode, train_mode)
 
-    def on_step_taken(self, transition, info):
+    def on_episode_end(self, episode, train_mode):
         for callback in self.callbacks:
-            callback.on_step_taken(transition, info)
+            callback.on_episode_end(episode, train_mode)
 
-    def on_episode_end(self):
-        logs = {}
+    def on_action_planned(self, step, logits, info):
         for callback in self.callbacks:
-            logs.update(callback.on_episode_end())
-        return logs
+            callback.on_action_planned(step, logits, info)
 
-    def on_loop_finish(self, is_aborted):
+    def on_step_taken(self, step, transition, info):
         for callback in self.callbacks:
-            callback.on_loop_finish(is_aborted)
+            callback.on_step_taken(step, transition, info)
 
+    @property
+    def metrics(self):
+        metrics = {}
+        for callback in self.callbacks:
+            metrics.update(callback.metrics)
+        return metrics
 
 class Environment(metaclass=ABCMeta):
     """Abstract class for environments."""
@@ -256,7 +275,8 @@ class Mind(metaclass=ABCMeta):
         Returns:
             np.array: Actions scores (e.g. unnormalized log probabilities/Q-values/etc.)
                 possibly raw Artificial Neural Net output i.e. logits.
-            dict: Planning metrics, content possibly depended on `debug_mode` value.
+            object (optional): Mind's extra information, passed to 'on_action_planned' callback.
+                If you will omit it, it will be set to None by default.
         """
 
         pass
@@ -404,8 +424,8 @@ def ply(env, mind, policy='deterministic', vision=Vision(), step=0, train_mode=T
     curr_state, _ = vision(env.current_state)
 
     # Infer what to do
-    logits, metrics = mind.plan(curr_state, curr_player, train_mode, debug_mode)
-    callbacks_list.on_action_planned(logits, metrics)
+    logits, mind_info = unpack(mind.plan(curr_state, curr_player, train_mode, debug_mode))
+    callbacks_list.on_action_planned(step, logits, mind_info)
 
     # Get valid actions and logits of those actions
     valid_actions = env.valid_actions
@@ -487,12 +507,12 @@ def ply(env, mind, policy='deterministic', vision=Vision(), step=0, train_mode=T
         raise ValueError("Undefined policy")
 
     # Take chosen action
-    raw_next_state, next_player, raw_reward, done, info = env.step(action)
+    raw_next_state, next_player, raw_reward, done, env_info = env.step(action)
 
     # Preprocess data and save in transition
     next_state, reward = vision(raw_next_state, raw_reward)
     transition = Transition(curr_player, curr_state, action, reward, next_player, next_state, done)
-    callbacks_list.on_step_taken(transition, info)
+    callbacks_list.on_step_taken(step, transition, env_info)
 
     return transition
 
@@ -519,7 +539,8 @@ def loop(env, minds, vision=Vision(), n_episodes=1, max_steps=-1, policy='determ
         render_mode (bool): If environment should be rendered. (Default: False)
         train_mode (bool): Informs env and Mind whether they're in training or evaluation mode.
             (Default: True)
-        verbose (int): Specify how much information to log (0: nothing, 1: progress bar, 2: logs).
+        verbose (int): Specify how much information to log:
+            0: nothing, 1: progress bar with last episode metrics, 2: each episode metrics.
             (Default: 2)
         callbacks (list of Callback objects): Objects that can listen to events during play.
             See `Callback` class docstrings. (Default: [])
@@ -535,10 +556,10 @@ def loop(env, minds, vision=Vision(), n_episodes=1, max_steps=-1, policy='determ
         first_player = 0
         pbar = tqdm(range(n_episodes), ascii=True, desc=name,
                     disable=True if verbose == 0 else False)
-        for iter in pbar:
+        for itr in pbar:
             step = 0
             _, player = env.reset(train_mode, first_player=first_player)
-            callbacks_list.on_episode_start(train_mode)
+            callbacks_list.on_episode_start(itr, train_mode)
 
             # Play until episode ends or max_steps limit reached
             while max_steps == -1 or step <= max_steps:
@@ -562,11 +583,15 @@ def loop(env, minds, vision=Vision(), n_episodes=1, max_steps=-1, policy='determ
 
                 # Finish if this transition was terminal
                 if transition.is_terminal:
-                    logs = callbacks_list.on_episode_end()
-                    if verbose >= 2:
+                    callbacks_list.on_episode_end(itr, train_mode)
+                    metrics = callbacks_list.metrics
+                    if verbose == 1:
                         # Update bar suffix
-                        pbar.write("Iter. {:3}".format(iter) + ": [ " + ", ".join(
-                            ["{}: {:.4g}".format(k, float(v)) for k, v in logs.items()]) + " ]")
+                        pbar.set_postfix(metrics)
+                    elif verbose >= 2:
+                        # Write episode metrics
+                        pbar.write("Episode {:2}/{}: ".format(itr + 1, n_episodes) + ", ".join(
+                            ["{}: {:.4g}".format(k, float(v)) for k, v in metrics.items()]))
 
                     # Finish episode
                     break
@@ -577,8 +602,11 @@ def loop(env, minds, vision=Vision(), n_episodes=1, max_steps=-1, policy='determ
     except KeyboardInterrupt:
         # Finish loop when aborted
         log.critical("KeyboardInterrupt, safely terminate loop and exit")
-        callbacks_list.on_loop_finish(True)
+        callbacks_list.on_loop_end(True)
         sys.exit()
 
     # Finish loop as planned
-    callbacks_list.on_loop_finish(False)
+    callbacks_list.on_loop_end(False)
+
+# This import has to be in here because of circular import between 'core' and 'utils'
+from .utils import unpack

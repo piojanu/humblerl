@@ -11,6 +11,7 @@ from humblerl import Callback, Mind
 from multiprocessing import Pool
 from tqdm import tqdm
 
+
 def compute_ranks(x):
     """Computes fitness ranks in rage: [0, len(x))."""
     assert x.ndim == 1
@@ -110,7 +111,6 @@ class NN(Mind):
         self.out[:] = weights[h_bias_offset:out_offset].reshape(self.out.shape)
         self.out_bias[:] = weights[out_offset:]
 
-
     @property
     def n_weights(self):
         return self.h_dim * (self.in_dim + self.out_dim) + self.h_dim + self.out_dim
@@ -122,21 +122,22 @@ class ReturnTracker(Callback):
     def on_loop_start(self):
         self.ret = 0
 
-    def on_step_taken(self, transition, info):
+    def on_step_taken(self, step, transition, info):
         self.ret += transition.reward
 
     @property
     def value(self):
         return self.ret
 
+
 def objective(weights, game_name, nn_dims):
     env = hrl.create_gym(game_name)
-    
+
     nn = NN(*nn_dims)
     nn.set_weights(weights)
 
     tracker = ReturnTracker()
-    
+
     hrl.loop(env, nn, verbose=0, callbacks=[tracker])
     return tracker.value
 
@@ -169,7 +170,7 @@ if __name__ == "__main__":
 
     # Book keeping variables
     best_return = float('-inf')
-    
+
     # Create environment to get state-action space info
     env = hrl.create_gym(args.game_name)
     nn_dims = (env.state_space.shape[0], args.h_dim, len(env.valid_actions))
@@ -177,7 +178,7 @@ if __name__ == "__main__":
     # Create neural net to get number of weights
     nn = NN(*nn_dims)
     n_weights = nn.n_weights
-    
+
     # Load CMA-ES solver if ckpt available
     if args.ckpt and os.path.isfile(args.ckpt):
         solver = CMAES.load_ckpt(args.ckpt)
@@ -212,4 +213,3 @@ if __name__ == "__main__":
             nn.set_weights(solver.current_param())
             hrl.loop(env, nn, render_mode=True, verbose=0, callbacks=[tracker])
             log.info("Current parameters (weights) return: %f.", tracker.value)
-            
