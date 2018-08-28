@@ -4,6 +4,7 @@ import sys
 
 from abc import ABCMeta, abstractmethod
 from collections import namedtuple
+from multiprocessing import Pool
 from tqdm import tqdm
 
 Transition = namedtuple(
@@ -50,7 +51,7 @@ class Callback(metaclass=ABCMeta):
 
     def on_episode_end(self, episode, train_mode):
         """Event after environment was reset.
-        
+
         Args:
             episode (int): Episode number.
             train_mode (bool): Informs whether episode is in training or evaluation mode.
@@ -97,7 +98,7 @@ class Callback(metaclass=ABCMeta):
 
         Returns:
             dict: Dictionary with logs names and values.
-        
+
         Note:
             Those values are fetched by 'humblerl.loop(...)' at the end of each episode (after
             'on_episode_end is' called) and then returned from 'humblerl.loop(...)' as evaluation
@@ -143,6 +144,7 @@ class CallbackList(object):
         for callback in self.callbacks:
             metrics.update(callback.metrics)
         return metrics
+
 
 class Environment(metaclass=ABCMeta):
     """Abstract class for environments."""
@@ -359,10 +361,10 @@ class Vision(object):
         """Initialize vision processors.
 
         Args:
-            state_processor_fn (function): Function for state processing. It should
+            state_processor_fn (callable): Function for state processing. It should
                 take raw environment state as an input and return processed state.
                 (Default: None which will result in passing raw state)
-            reward_processor_fn (function): Function for reward processing. It should
+            reward_processor_fn (callable): Function for reward processing. It should
                 take raw environment reward as an input and return processed reward.
                 (Default: None which will result in passing raw reward)
         """
@@ -619,6 +621,48 @@ def loop(env, minds, vision=Vision(), n_episodes=1, max_steps=-1, policy='determ
     # Finish loop as planned
     callbacks_list.on_loop_end(False)
     return history.history
+
+
+class Worker(object):
+    """Loop worker."""
+
+    def __init__(self, env_factory, mind_factory, loop_kwargs):
+        self.env_factory = env_factory
+        self.mind_factory = mind_factory
+        self.loop_kwargs = loop_kwargs
+
+        self.env = None
+
+    def __call__(self, job):
+        if self.env is None:
+            self.env = self.env_factory()
+
+        mind = self.mind_factory(job)
+        return loop(self.env, mind, **self.loop_kwargs)
+
+
+def pool(env_factory, mind_factory, jobs, processes=None, **kwargs):
+    """Runs `processes` number of workers which executes jobs (minds instances) in own environments.
+
+    Args:
+        env_factory (callable): Function that takes no arguments and return 'Environment'.
+            Called once per worker and shared between jobs.
+        mind_factory (callable): Function that takes one argument, job element and returns 'Mind'.
+            Called once per each job ('hrl.loop(...)' execution on environment with mind).
+        jobs (iterable): Jobs (picklable objects) run by workers. Can be e.g. 'range(...)'.
+        processes (int or None): Number of workers. If None then taken from 'os.cpu_count()'.
+            (Default: None)
+        **kwargs: Arguments passed to each 'hrl.loop(...)' execution. Copied to each worker.
+
+    Returns:
+        list: History dictionaries from 'humblerl.loop(...)' of each job.
+    """
+
+    worker = Worker(env_factory, mind_factory, kwargs)
+    with Pool(processes=processes) as pool:
+        return pool.map(worker, jobs)
+
+
 
 # This import has to be in here because of circular import between 'core' and 'utils'
 from .utils import History, unpack
