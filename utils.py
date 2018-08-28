@@ -1,6 +1,24 @@
 import numpy as np
 
-from . import Mind
+from .core import Mind
+
+
+def unpack(value, number=2, default=None):
+    """Unpack given `value` (item/tuple/list) to `number` of elements.
+    Elements from `value` goes first, then the rest is set to `default`."""
+
+    if not isinstance(value, list):
+        if isinstance(value, tuple):
+            value = list(value)
+        else:
+            value = [value]
+
+    assert len(value) <= number
+
+    for _ in range(number - len(value)):
+        value.append(default)
+
+    return value
 
 
 class RandomAgent(Mind):
@@ -28,8 +46,8 @@ class RandomAgent(Mind):
         if len(self.action_space.shape) == 1:
             one_hot = np.zeros_like(self.action_space)
             one_hot[np.random.choice(self.action_space)] = 1
-            return one_hot, None
+            return one_hot
         elif len(self.action_space.shape) == 2:
-            return np.random.uniform(self.action_space.T[0], self.action_space.T[1]), None
+            return np.random.uniform(self.action_space.T[0], self.action_space.T[1])
         else:
             raise ValueError("Invalid action space!")

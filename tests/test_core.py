@@ -31,14 +31,14 @@ class TestBasicCore(object):
     @pytest.fixture
     def mind(self):
         mock = MagicMock(spec=Mind)
-        mock.plan.return_value = self.LOGITS, None
+        mock.plan.return_value = self.LOGITS
 
         return mock
 
     @pytest.fixture
     def callback(self):
         mock = MagicMock(spec=Callback)
-        mock.on_episode_end.return_value = {}
+        type(mock).metrics = PropertyMock(return_value={})
 
         return mock
 
@@ -53,8 +53,8 @@ class TestBasicCore(object):
 
         env.step.assert_called_once_with(np.argmax(self.VALID_ACTIONS))
         mind.plan.assert_called_once_with(self.INIT_STATE, self.CURR_PLAYER, train_mode, debug_mode)
-        callback.on_action_planned.assert_called_once_with(self.LOGITS, None)
-        callback.on_step_taken.assert_called_once_with(transition, None)
+        callback.on_action_planned.assert_called_once_with(0, self.LOGITS, None)
+        callback.on_step_taken.assert_called_once_with(0, transition, None)
 
     def test_loop(self, env, mind, callback):
         train_mode = False
@@ -63,6 +63,6 @@ class TestBasicCore(object):
 
         env.reset.assert_called_once_with(train_mode, first_player=self.CURR_PLAYER)
         callback.on_loop_start.assert_called_once_with()
-        callback.on_episode_start.assert_called_once_with(train_mode)
-        callback.on_episode_end.assert_called_once_with()
-        callback.on_loop_finish.assert_called_once_with(False)
+        callback.on_episode_start.assert_called_once_with(0, train_mode)
+        callback.on_episode_end.assert_called_once_with(0, train_mode)
+        callback.on_loop_end.assert_called_once_with(False)

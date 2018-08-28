@@ -34,8 +34,8 @@ class TestStoreTransitions2Hdf5(object):
                 is_terminal=(idx + 1) % 16 == 0
             )
             transitions.append(transition)
-            callback.on_step_taken(transition, None)
-        callback.on_loop_finish(False)
+            callback.on_step_taken(idx, transition, None)
+        callback.on_loop_end(False)
 
         h5py_file = h5py.File(HDF5_PATH, "r")
         assert h5py_file.attrs["N_TRANSITIONS"] == N_TRANSITIONS
@@ -76,8 +76,8 @@ class TestStoreTransitions2Hdf5(object):
                 is_terminal=(idx + 1) % 16 == 0
             )
             transitions.append(transition)
-            callback.on_step_taken(transition, None)
-        callback.on_loop_finish(False)
+            callback.on_step_taken(idx, transition, None)
+        callback.on_loop_end(False)
 
         h5py_file = h5py.File(HDF5_PATH, "r")
         assert h5py_file.attrs["N_TRANSITIONS"] == N_TRANSITIONS
@@ -115,7 +115,7 @@ class TestStoreTransitions2Hdf5(object):
             next_states.append(np.random.uniform(STATE_SPACE.T[0], STATE_SPACE.T[1]).tolist())
             transitions.append((idx, np.random.choice(ACTION_SPACE), np.random.normal(0, 1), 0))
 
-            callback.on_step_taken(Transition(
+            callback.on_step_taken(idx, Transition(
                 player=transitions[-1][0],
                 state=states[-1],
                 action=transitions[-1][1],
