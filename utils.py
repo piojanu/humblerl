@@ -21,6 +21,22 @@ def unpack(value, number=2, default=None):
     return value
 
 
+class History(object):
+    """Keeps history of metrics."""
+
+    def __init__(self):
+        self.episode = 0
+        self.history = {}
+
+    def update(self, metrics):
+        """Updates history dict in such a way, that every metric values list has the same length
+        equal number of episodes."""
+        for k in set(list(self.history.keys()) + list(metrics.keys())):
+            self.history.setdefault(k, [None] * self.episode).append(metrics.get(k, None))
+
+        self.episode += 1
+
+
 class RandomAgent(Mind):
     """Mind that acts at random (uniformly)."""
 

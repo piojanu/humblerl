@@ -6,7 +6,6 @@ import numpy as np
 import os.path
 import pickle
 
-from functools import partial
 from humblerl import Callback, Mind
 from multiprocessing import Pool
 from tqdm import tqdm
@@ -81,81 +80,60 @@ class CMAES:
         return pickle.load(open(os.path.abspath(path), 'rb'))
 
 
-class NN(Mind):
+class Liniear(Mind):
     """Simple Artificial Neural Net agent."""
 
-    def __init__(self, input_dim, hidden_dim, output_dim):
+    def __init__(self, input_dim, output_dim):
         self.in_dim = input_dim
-        self.h_dim = hidden_dim
         self.out_dim = output_dim
 
-        self.h = np.zeros((self.in_dim, self.h_dim))
-        self.h_bias = np.zeros(self.h_dim)
-        self.out = np.zeros((self.h_dim, self.out_dim))
-        self.out_bias = np.zeros(self.out_dim)
+        self.weights = np.zeros((self.in_dim + 1, self.out_dim))
 
     def plan(self, state, player, train_mode, debug_mode):
-        h = state @ self.h + self.h_bias
-        h[h < 0] = 0
-
-        out = h @ self.out + self.out_bias
-        return out, None
+        return np.concatenate((state, [1.])) @ self.weights
 
     def set_weights(self, weights):
-        h_offset = self.in_dim * self.h_dim
-        h_bias_offset = h_offset + self.h_dim
-        out_offset = h_bias_offset + self.h_dim * self.out_dim
-
-        self.h[:] = weights[:h_offset].reshape(self.h.shape)
-        self.h_bias[:] = weights[h_offset:h_bias_offset]
-        self.out[:] = weights[h_bias_offset:out_offset].reshape(self.out.shape)
-        self.out_bias[:] = weights[out_offset:]
+        self.weights[:] = weights.reshape(self.in_dim + 1, self.out_dim)
 
     @property
     def n_weights(self):
-        return self.h_dim * (self.in_dim + self.out_dim) + self.h_dim + self.out_dim
+        return (self.in_dim + 1) * self.out_dim
 
 
 class ReturnTracker(Callback):
     """Tracks return."""
 
-    def on_loop_start(self):
+    def on_episode_start(self, episode, train_mode):
         self.ret = 0
 
     def on_step_taken(self, step, transition, info):
         self.ret += transition.reward
 
     @property
-    def value(self):
-        return self.ret
+    def metrics(self):
+        return {"return": self.ret}
 
 
-def objective(weights, game_name, nn_dims):
-    env = hrl.create_gym(game_name)
+def objective(weights):
+    env = hrl.create_gym("CartPole-v0")
 
-    nn = NN(*nn_dims)
-    nn.set_weights(weights)
+    mind = Liniear(env.state_space.shape[0], len(env.valid_actions))
+    mind.set_weights(weights)
 
-    tracker = ReturnTracker()
-
-    hrl.loop(env, nn, verbose=0, callbacks=[tracker])
-    return tracker.value
+    history = hrl.loop(env, mind, verbose=0, callbacks=[ReturnTracker()])
+    return history['return'][0]
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
-    parser.add_argument('--game_name', type=str, default="CartPole-v0", metavar='S',
-                        help='OpenAI Gym, cont. states and disc. actions (default: CartPole-v0)')
-    parser.add_argument('--epochs', type=int, default=50, metavar='N',
-                        help='number of epochs to train (default: 100)')
+    parser.add_argument('--epochs', type=int, default=10, metavar='N',
+                        help='number of epochs to train (default: 10)')
     parser.add_argument('--popsize', type=int, default=100, metavar='N',
                         help='population size (default: 100)')
     parser.add_argument('--processes', type=int, default=None, metavar='N',
                         help='size of process pool for evaluation (default: CPU count')
     parser.add_argument('--decay', type=float, default=0.01, metavar='L2',
                         help='L2 weight decay rate (default: 0.01)')
-    parser.add_argument('--h_dim', type=int, default=16, metavar='N',
-                        help='size of hidden layer (default: 16)')
     parser.add_argument('--ckpt', type=str, default=None, metavar='PATH',
                         help='checkpoint path to load from/save to model (default: None)')
     parser.add_argument('--render', action='store_true', default=False,
@@ -171,20 +149,16 @@ if __name__ == "__main__":
     # Book keeping variables
     best_return = float('-inf')
 
-    # Create environment to get state-action space info
-    env = hrl.create_gym(args.game_name)
-    nn_dims = (env.state_space.shape[0], args.h_dim, len(env.valid_actions))
-
-    # Create neural net to get number of weights
-    nn = NN(*nn_dims)
-    n_weights = nn.n_weights
+    # Create environment and mind
+    env = hrl.create_gym("CartPole-v0")
+    mind = Liniear(env.state_space.shape[0], len(env.valid_actions))
 
     # Load CMA-ES solver if ckpt available
     if args.ckpt and os.path.isfile(args.ckpt):
         solver = CMAES.load_ckpt(args.ckpt)
         log.info("Loaded solver from ckpt (NOTE: pop. size and l2 decay was also loaded).")
     else:
-        solver = CMAES(n_weights, popsize=args.popsize, weight_decay=args.decay)
+        solver = CMAES(mind.n_weights, popsize=args.popsize, weight_decay=args.decay)
         log.info("Created solver with pop. size: %d and l2 decay: %f.", args.popsize, args.decay)
 
     # Train for N epochs
@@ -194,8 +168,7 @@ if __name__ == "__main__":
         population = solver.ask()
 
         with Pool(processes=args.processes) as pool:
-            returns = pool.map(
-                partial(objective, game_name=args.game_name, nn_dims=nn_dims), population)
+            returns = pool.map(objective, population)
 
         pbar.set_postfix(best=best_return, current=max(returns))
         best_return = max(best_return, max(returns))
@@ -209,7 +182,6 @@ if __name__ == "__main__":
 
         if args.render:
             # Evaluate current parameters with render
-            tracker = ReturnTracker()
-            nn.set_weights(solver.current_param())
-            hrl.loop(env, nn, render_mode=True, verbose=0, callbacks=[tracker])
-            log.info("Current parameters (weights) return: %f.", tracker.value)
+            mind.set_weights(solver.current_param())
+            history = hrl.loop(env, mind, render_mode=True, verbose=0, callbacks=[ReturnTracker()])
+            log.info("Current parameters (weights) return: %f.", history['return'][0])

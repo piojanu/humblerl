@@ -93,13 +93,15 @@ class Callback(metaclass=ABCMeta):
 
     @property
     def metrics(self):
-        """Returns evaluation/training metrics.
+        """Returns execution metrics.
 
         Returns:
-            dict: Dictionary with logs names and values. Those will be visible in CMD progress bar.
+            dict: Dictionary with logs names and values.
         
         Note:
-            Those values are stored and returned from 'humblerl.loop(...)' as evaluation history.
+            Those values are fetched by 'humblerl.loop(...)' at the end of each episode (after
+            'on_episode_end is' called) and then returned from 'humblerl.loop(...)' as evaluation
+            history. Those also are logged by 'humblerl.loop(...)' depending on its verbosity.
         """
 
         return {}
@@ -544,12 +546,19 @@ def loop(env, minds, vision=Vision(), n_episodes=1, max_steps=-1, policy='determ
             (Default: 2)
         callbacks (list of Callback objects): Objects that can listen to events during play.
             See `Callback` class docstrings. (Default: [])
-        **kwargs: Other keyword arguments may be needed depending on chosen policy.
+        **kwargs: Other keyword arguments may be needed depending on e.g. chosen policy.
+
+    Returns:
+        dict of lists: Evaluation history. Those are callbacks metrics gathered through course of
+            loop execution. Keys are metrics names and metrics values for each episode are in lists.
     """
 
     # Create callbacks list and "officially start loop"
     callbacks_list = CallbackList(callbacks)
     callbacks_list.on_loop_start()
+
+    # Create history object to store metrics after each episode
+    history = History()
 
     try:
         # Play given number of episodes
@@ -585,6 +594,8 @@ def loop(env, minds, vision=Vision(), n_episodes=1, max_steps=-1, policy='determ
                 if transition.is_terminal:
                     callbacks_list.on_episode_end(itr, train_mode)
                     metrics = callbacks_list.metrics
+                    history.update(metrics)
+
                     if verbose == 1:
                         # Update bar suffix
                         pbar.set_postfix(metrics)
@@ -607,6 +618,7 @@ def loop(env, minds, vision=Vision(), n_episodes=1, max_steps=-1, policy='determ
 
     # Finish loop as planned
     callbacks_list.on_loop_end(False)
+    return history.history
 
 # This import has to be in here because of circular import between 'core' and 'utils'
-from .utils import unpack
+from .utils import History, unpack
