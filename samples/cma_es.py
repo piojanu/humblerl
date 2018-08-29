@@ -7,7 +7,6 @@ import os.path
 import pickle
 
 from humblerl import Callback, Mind
-from multiprocessing import Pool
 from tqdm import tqdm
 
 
@@ -80,8 +79,8 @@ class CMAES:
         return pickle.load(open(os.path.abspath(path), 'rb'))
 
 
-class LiniearModel(Mind):
-    """Simple Artificial Neural Net agent."""
+class LinearModel(Mind):
+    """Simple linear regression agent."""
 
     def __init__(self, input_dim, output_dim):
         self.in_dim = input_dim
@@ -141,7 +140,7 @@ if __name__ == "__main__":
 
     # Create environment and mind
     env = hrl.create_gym("CartPole-v0")
-    mind = LiniearModel(env.state_space.shape[0], len(env.valid_actions))
+    mind = LinearModel(env.state_space.shape[0], len(env.valid_actions))
 
     # Load CMA-ES solver if ckpt available
     if args.ckpt and os.path.isfile(args.ckpt):
