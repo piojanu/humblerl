@@ -88,11 +88,25 @@ class Environment(metaclass=ABCMeta):
         return self._players_number
 
     @property
+    def action_space(self):
+        """Access currently (this state) valid actions.
+
+        Returns:
+            int: It's integer describing action space size.
+
+        Note:
+            In child class just set `self._action_space`.
+            For now only discrete actions are supported!
+        """
+
+        return self._action_space
+
+    @property
     def state_space(self):
         """Access environment state space.
 
         Returns:
-            np.array: If desecrate state space, then it's one item describing state space size.
+            int or np.array: If desecrate state space, then it's integer describing state space size.
                 If continuous, then this is (M + 1) dimensional array, where first M dimensions are
                 state dimensions and last dimension of size 2 keeps respectively [min, max]
                 (inclusive range) values which given state feature can take.
@@ -108,14 +122,11 @@ class Environment(metaclass=ABCMeta):
         """Access currently (this state) valid actions.
 
         Returns:
-            np.array: If desecrate action space, then it's a 1D array with available action values.
-                If continuous, then this is 2D array, where first dimension has action vector size
-                and second dimension of size 2 keeps respectively [min, max] (inclusive range)
-                values which given action vector element can take.
+            np.array: It's a 1D array with available action values.
 
         Note:
-            In child class just set `self._valid_actions`. If valid actions depend on current
-            state, just override this property.
+            In child class just set `self._valid_actions`.
+            For now only discrete actions are supported!
         """
 
         return self._valid_actions
@@ -177,7 +188,7 @@ class Model(metaclass=ABCMeta):
         """Access environment state space.
 
         Returns:
-            np.array: If desecrate state space, then it's one item describing state space size.
+            int or np.array: If desecrate state space, then it's integer describing state space size.
                 If continuous, then this is (M + 1)-D array, where first M dimensions are
                 state dimensions and last dimension of size 2 keeps respectively [min, max]
                 (inclusive range) values which given state feature can take.
@@ -199,7 +210,7 @@ class GymEnvironment(Environment):
         # Get state space
         obs_space = self.env.observation_space
         if isinstance(obs_space, gym.spaces.Discrete):
-            self._state_space = np.array([obs_space.n])
+            self._state_space = obs_space.n
         elif isinstance(obs_space, gym.spaces.Box):
             self._state_space = np.concatenate((
                 np.expand_dims(obs_space.low, axis=-1),
@@ -211,6 +222,7 @@ class GymEnvironment(Environment):
         act_space = self.env.action_space
         if isinstance(act_space, gym.spaces.Discrete):
             self._valid_actions = np.array(list(range(act_space.n)))
+            self._action_space = act_space.n
         else:
             raise ValueError("For OpenAI Gym only discrete action space is supported")
 
