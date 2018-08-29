@@ -1,381 +1,33 @@
 import logging as log
 import numpy as np
-import sys
 
-from abc import ABCMeta, abstractmethod
 from collections import namedtuple
 from multiprocessing import Pool
 from tqdm import tqdm
+
+from .agents import Vision
+from .callbacks import CallbackList
+from .utils import History, unpack
 
 Transition = namedtuple(
     "Transition", ["player", "state", "action", "reward", "next_player", "next_state", "is_terminal"])
 
 
-class Callback(metaclass=ABCMeta):
-    """Callbacks can be used to listen to events during RL loop execution."""
+class Worker(object):
+    """Loop worker."""
 
-    def on_loop_start(self):
-        """Event when loop starts.
+    def __init__(self, env_factory, mind_factory, loop_kwargs):
+        self.env_factory = env_factory
+        self.mind_factory = mind_factory
+        self.loop_kwargs = loop_kwargs
 
-        Note:
-            You can assume, that this event occurs before any other event in current loop.
-        """
+        self.env = None
 
-        pass
+    def __call__(self, job):
+        if self.env is None:
+            self.env = self.env_factory()
 
-    def on_loop_end(self, is_aborted):
-        """Event when loop finish.
-
-        Args:
-            is_aborted (bool): Flag indication if loop has finished as planed or was terminated.
-
-        Note:
-            You can assume, that this event occurs after specified episodes number or when
-            loop is terminated manually (e.g. by Ctrl+C).
-        """
-
-        pass
-
-    def on_episode_start(self, episode, train_mode):
-        """Event when episode starts.
-
-        Args:
-            episode (int): Episode number.
-            train_mode (bool): Informs whether episode is in training or evaluation mode.
-
-        Note:
-            You can assume, that this event occurs always before any action is taken in episode.
-        """
-
-        pass
-
-    def on_episode_end(self, episode, train_mode):
-        """Event after environment was reset.
-
-        Args:
-            episode (int): Episode number.
-            train_mode (bool): Informs whether episode is in training or evaluation mode.
-
-        Note:
-            You can assume, that this event occurs after step to terminal state.
-        """
-
-        pass
-
-    def on_action_planned(self, step, logits, info):
-        """Event after Mind was evaluated.
-
-        Args:
-            step (int): Step number.
-            logits (np.array): Actions scores (e.g. unnormalized log probabilities/Q-values/etc.)
-                raw values returned from 'Mind.plan(...)'.
-            info (object): Mind's extra information, may be None.
-
-        Note:
-            You can assume, that this event occurs always before step finish.
-        """
-
-        pass
-
-    def on_step_taken(self, step, transition, info):
-        """Event after action was taken in environment.
-
-        Args:
-            step (int): Step number.
-            transition (Transition): Describes transition that took place.
-            info (object): Environment diagnostic information if available otherwise None.
-
-        Note:
-            Transition is returned from `ply` function (look to docstring for more info).
-            Also, you can assume, that this event occurs always after action was planned.
-        """
-
-        pass
-
-    @property
-    def metrics(self):
-        """Returns execution metrics.
-
-        Returns:
-            dict: Dictionary with logs names and values.
-
-        Note:
-            Those values are fetched by 'humblerl.loop(...)' at the end of each episode (after
-            'on_episode_end is' called) and then returned from 'humblerl.loop(...)' as evaluation
-            history. Those also are logged by 'humblerl.loop(...)' depending on its verbosity.
-        """
-
-        return {}
-
-
-class CallbackList(object):
-    """Simplifies calling all callbacks from list."""
-
-    def __init__(self, callbacks):
-        self.callbacks = callbacks
-
-    def on_loop_start(self):
-        for callback in self.callbacks:
-            callback.on_loop_start()
-
-    def on_loop_end(self, is_aborted):
-        for callback in self.callbacks:
-            callback.on_loop_end(is_aborted)
-
-    def on_episode_start(self, episode, train_mode):
-        for callback in self.callbacks:
-            callback.on_episode_start(episode, train_mode)
-
-    def on_episode_end(self, episode, train_mode):
-        for callback in self.callbacks:
-            callback.on_episode_end(episode, train_mode)
-
-    def on_action_planned(self, step, logits, info):
-        for callback in self.callbacks:
-            callback.on_action_planned(step, logits, info)
-
-    def on_step_taken(self, step, transition, info):
-        for callback in self.callbacks:
-            callback.on_step_taken(step, transition, info)
-
-    @property
-    def metrics(self):
-        metrics = {}
-        for callback in self.callbacks:
-            metrics.update(callback.metrics)
-        return metrics
-
-
-class Environment(metaclass=ABCMeta):
-    """Abstract class for environments."""
-
-    @abstractmethod
-    def render(self):
-        """Show/print some visual representation of environment's current state."""
-
-        pass
-
-    @abstractmethod
-    def reset(self, train_mode=True, first_player=0):
-        """Reset environment and return a first state.
-
-        Args:
-            train_mode (bool): Informs environment if it's training or evaluation
-                mode. (Default: True)
-            first_player (int): Index of player who starts game. (Default: 0)
-
-        Returns:
-            np.array: The initial state. 
-            int: Current player (first is 0).
-        """
-
-        pass
-
-    @abstractmethod
-    def step(self, action):
-        """Perform action in environment.
-
-        Args:
-            action (int or np.array): Action to perform. In discrete action space it's integer
-                action number. In continuous case, it's action vector (np.array).
-
-        Returns:
-            np.array: New state.
-            int: Next player (first is 0).
-            float: Reward.
-            bool: Flag indicating if episode has ended.
-            object: Environment diagnostic information if available otherwise None.
-        """
-
-        pass
-
-    @property
-    def current_player(self):
-        """Access current player index in environment state.
-
-        Returns:
-            int: Current player (first is 0).
-
-        Note:
-            In child class just set self._current_player
-        """
-
-        return self._current_player
-
-    @property
-    def current_state(self):
-        """Access current observable state in which environment is.
-
-        Returns:
-            np.array: Current observable environment state.
-
-        Note:
-            In child class just set self._current_state
-        """
-
-        return self._current_state
-
-    @property
-    def players_number(self):
-        """Access number of players that take actions in this MDP.
-
-        Returns:
-            int: Number of players (first is 0).
-
-        Note:
-            In child class just set `self._players_number`.
-        """
-
-        return self._players_number
-
-    @property
-    def state_space(self):
-        """Access environment state space.
-
-        Returns:
-            np.array: If desecrate state space, then it's one item describing state space size.
-                If continuous, then this is (M + 1) dimensional array, where first M dimensions are
-                state dimensions and last dimension of size 2 keeps respectively [min, max]
-                (inclusive range) values which given state feature can take.
-
-        Note:
-            In child class just set `self._state_space`.
-        """
-
-        return self._state_space
-
-    @property
-    def valid_actions(self):
-        """Access currently (this state) valid actions.
-
-        Returns:
-            np.array: If desecrate action space, then it's a 1D array with available action values.
-                If continuous, then this is 2D array, where first dimension has action vector size
-                and second dimension of size 2 keeps respectively [min, max] (inclusive range)
-                values which given action vector element can take.
-
-        Note:
-            In child class just set `self._valid_actions`. If valid actions depend on current
-            state, just override this property.
-        """
-
-        return self._valid_actions
-
-
-class Mind(metaclass=ABCMeta):
-    """Artificial mind of RL agent."""
-
-    @abstractmethod
-    def plan(self, state, player, train_mode, debug_mode):
-        """Do forward pass through agent model, inference/planning on state.
-
-        Args:
-            state (np.array): State of environment to inference on.
-            player (int): Current player index.
-            train_mode (bool): Informs planner whether it's in training or evaluation mode.
-                E.g. in evaluation it can optimise graph, disable exploration etc.
-            debug_mode (bool): Informs planner whether it's in debug mode or not.
-
-        Returns:
-            np.array: Actions scores (e.g. unnormalized log probabilities/Q-values/etc.)
-                possibly raw Artificial Neural Net output i.e. logits.
-            object (optional): Mind's extra information, passed to 'on_action_planned' callback.
-                If you will omit it, it will be set to None by default.
-        """
-
-        pass
-
-
-class Model(metaclass=ABCMeta):
-    """Represents some MDP, describes state and action spaces and give access to dynamics."""
-
-    @abstractmethod
-    def simulate(self, state, player, action):
-        """Perform `action` as `player` in `state`. Return outcome.
-
-        Args:
-            state (np.array): State of MDP.
-            player (int): Current player index.
-            action (np.array): Action to perform. In discrete action space it's single
-                item with action number. In continuous case, it's action vector.
-
-        Returns:
-            np.array: New state.
-            int: Next player (first is 0).
-            float: Reward.
-            bool: Flag indicating if episode has ended.
-        """
-
-        pass
-
-    @property
-    @abstractmethod
-    def action_space(self, state):
-        """Access valid actions of given MDP state.
-
-        Args:
-            state (np.array): State of MDP.
-
-        Returns:
-            np.array: If desecrate action space, then it's a 1D array with available action values.
-                If continuous, then this is 2D array, where first dimension has action vector size
-                and second dimension of size 2 keeps respectively [min, max] (inclusive range)
-                values which given action vector element can take.
-        """
-
-        pass
-
-    @property
-    @abstractmethod
-    def players_number(self):
-        """Access number of players that take actions in this MDP.
-
-        Returns:
-            int: Number of players (first is 0).
-        """
-
-        pass
-
-    @property
-    @abstractmethod
-    def state_space(self):
-        """Access environment state space.
-
-        Returns:
-            np.array: If desecrate state space, then it's one item describing state space size.
-                If continuous, then this is (M + 1)-D array, where first M dimensions are
-                state dimensions and last dimension of size 2 keeps respectively [min, max]
-                (inclusive range) values which given state feature can take.
-        """
-
-        pass
-
-
-class Vision(object):
-    """Vision system entity in Reinforcement Learning task.
-
-       It is responsible for e.g. data preprocessing, feature extraction etc.
-    """
-
-    def __init__(self, state_processor_fn=None, reward_processor_fn=None):
-        """Initialize vision processors.
-
-        Args:
-            state_processor_fn (callable): Function for state processing. It should
-                take raw environment state as an input and return processed state.
-                (Default: None which will result in passing raw state)
-            reward_processor_fn (callable): Function for reward processing. It should
-                take raw environment reward as an input and return processed reward.
-                (Default: None which will result in passing raw reward)
-        """
-
-        self._process_state = \
-            state_processor_fn if state_processor_fn is not None else lambda x: x
-        self._process_reward = \
-            reward_processor_fn if reward_processor_fn is not None else lambda x: x
-
-    def __call__(self, state, reward=0.):
-        return self._process_state(state), self._process_reward(reward)
+        return loop(self.env, self.mind_factory(job), **self.loop_kwargs)
 
 
 def ply(env, mind, policy='deterministic', vision=Vision(), step=0, train_mode=True,
@@ -614,31 +266,13 @@ def loop(env, minds, vision=Vision(), n_episodes=1, max_steps=-1, policy='determ
                 first_player = (first_player + 1) % len(minds)
     except KeyboardInterrupt:
         # Finish loop when aborted
-        log.critical("KeyboardInterrupt, safely terminate loop and exit")
+        log.critical("Safely terminating loop...")
         callbacks_list.on_loop_end(True)
-        sys.exit()
+        raise  # Pass exception upper
 
     # Finish loop as planned
     callbacks_list.on_loop_end(False)
     return history.history
-
-
-class Worker(object):
-    """Loop worker."""
-
-    def __init__(self, env_factory, mind_factory, loop_kwargs):
-        self.env_factory = env_factory
-        self.mind_factory = mind_factory
-        self.loop_kwargs = loop_kwargs
-
-        self.env = None
-
-    def __call__(self, job):
-        if self.env is None:
-            self.env = self.env_factory()
-
-        mind = self.mind_factory(job)
-        return loop(self.env, mind, **self.loop_kwargs)
 
 
 def pool(env_factory, mind_factory, jobs, processes=None, **kwargs):
@@ -661,8 +295,3 @@ def pool(env_factory, mind_factory, jobs, processes=None, **kwargs):
     worker = Worker(env_factory, mind_factory, kwargs)
     with Pool(processes=processes) as pool:
         return pool.map(worker, jobs)
-
-
-
-# This import has to be in here because of circular import between 'core' and 'utils'
-from .utils import History, unpack
