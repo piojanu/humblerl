@@ -114,7 +114,7 @@ class ReturnTracker(Callback):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='PyTorch MNIST Example')
+    parser = argparse.ArgumentParser(description='HumbleRL CMA-ES sample')
     parser.add_argument('--epochs', type=int, default=10, metavar='N',
                         help='number of epochs to train (default: 10)')
     parser.add_argument('--popsize', type=int, default=100, metavar='N',
