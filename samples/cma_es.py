@@ -6,7 +6,7 @@ import numpy as np
 import os.path
 import pickle
 
-from humblerl import Callback, Mind
+from humblerl import Callback, Factory, Mind
 from tqdm import tqdm
 
 
@@ -157,20 +157,27 @@ if __name__ == "__main__":
         population = solver.ask()
 
         # Evaluate population in parallel
-        def env_factory():
-            return hrl.create_gym("CartPole-v0")
+        class Evaluator(Factory):
+            def __init__(self, state_size, action_size):
+                self.state_size = state_size
+                self.action_size = action_size
 
-        def mind_factory(w):
-            mind.set_weights(w)
-            return mind
+            def env_factory(self):
+                return hrl.create_gym("CartPole-v0")
+
+            def mind_factory(self, weights):
+                mind = LinearModel(self.state_size, self.action_size)
+                mind.set_weights(weights)
+                return mind
+
+            def callbacks_factory(self):
+                return [ReturnTracker()]
 
         hists = hrl.pool(
-            env_factory,
-            mind_factory,
+            Evaluator(env.state_space.shape[0], len(env.valid_actions)),
             jobs=population,
             processes=args.processes,
-            verbose=0,
-            callbacks=[ReturnTracker()]
+            verbose=0
         )
         returns = [hist['return'][0] for hist in hists]
 
@@ -191,6 +198,9 @@ if __name__ == "__main__":
             mind.set_weights(solver.current_param())
             history = hrl.loop(env, mind, render_mode=True, verbose=0, callbacks=[ReturnTracker()])
             log.info("Current parameters (weights) return: %f.", history['return'][0])
+
+    # Yea, wrapper on wrapper :| Please see this: https://github.com/openai/gym/issues/893
+    env.env.env.close()
 
     # If environment wasn't solved then exit with error
     assert best_return == 200, "Environment wasn't solved!"
