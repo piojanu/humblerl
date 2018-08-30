@@ -108,7 +108,7 @@ class CallbackList(object):
     """Simplifies calling all callbacks from list."""
 
     def __init__(self, callbacks):
-        self.callbacks = callbacks
+        self.callbacks = callbacks or []
 
     def on_loop_start(self):
         for callback in self.callbacks:

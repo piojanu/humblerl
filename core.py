@@ -30,8 +30,8 @@ class Worker(object):
         return loop(self.env, self.mind_factory(job), **self.loop_kwargs)
 
 
-def ply(env, mind, policy='deterministic', vision=Vision(), step=0, train_mode=True,
-        debug_mode=False, callbacks=[], **kwargs):
+def ply(env, mind, policy='deterministic', vision=None, step=0, train_mode=True,
+        debug_mode=False, callbacks=None, **kwargs):
     """Conduct single ply (turn taken by one of the players).
 
     Args:
@@ -44,7 +44,7 @@ def ply(env, mind, policy='deterministic', vision=Vision(), step=0, train_mode=T
             (Default: True)
         debug_mode (bool): Informs planner whether it's in debug mode or not. (Default: False)
         callbacks (list of Callback objects): Objects that can listen to events during play.
-            (Default: [])
+            See `Callback` class docstrings. (Default: None)
         **kwargs: Other keyword arguments may be needed depending on chosen policy.
 
     Return:
@@ -75,6 +75,9 @@ def ply(env, mind, policy='deterministic', vision=Vision(), step=0, train_mode=T
     # Create callbacks list
     callbacks_list = CallbackList(callbacks)
 
+    # Create default vision if one wasn't passed
+    vision = vision or Vision()
+    
     # Get current player and current state (preprocess it)
     curr_player = env.current_player
     curr_state, _ = vision(env.current_state)
@@ -173,9 +176,9 @@ def ply(env, mind, policy='deterministic', vision=Vision(), step=0, train_mode=T
     return transition
 
 
-def loop(env, minds, vision=Vision(), n_episodes=1, max_steps=-1, policy='deterministic', name="",
+def loop(env, minds, vision=None, n_episodes=1, max_steps=-1, policy='deterministic', name="",
          alternate_players=False, debug_mode=False, render_mode=False, train_mode=True,
-         verbose=2, callbacks=[], **kwargs):
+         verbose=2, callbacks=None, **kwargs):
     """Conduct series of plies (turns taken by each player in order).
 
     Args:
@@ -199,7 +202,7 @@ def loop(env, minds, vision=Vision(), n_episodes=1, max_steps=-1, policy='determ
             0: nothing, 1: progress bar with last episode metrics, 2: each episode metrics.
             (Default: 2)
         callbacks (list of Callback objects): Objects that can listen to events during play.
-            See `Callback` class docstrings. (Default: [])
+            See `Callback` class docstrings. (Default: None)
         **kwargs: Other keyword arguments may be needed depending on e.g. chosen policy.
 
     Returns:
