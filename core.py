@@ -1,6 +1,7 @@
 import logging as log
 import numpy as np
 
+from abc import ABCMeta, abstractmethod
 from collections import namedtuple
 from multiprocessing import Pool
 from tqdm import tqdm
@@ -13,21 +14,63 @@ Transition = namedtuple(
     "Transition", ["player", "state", "action", "reward", "next_player", "next_state", "is_terminal"])
 
 
+class Factory(metaclass=ABCMeta):
+    """Factory for loop worker.
+
+    While creating your implementation of Factory you have to implement
+    `env_factory` and `mind_factory`.
+    `env_factory` is a function that takes no arguments and returns 'Environment'. It's called once
+    per worker and returned environment is shared between jobs.
+    `mind_factory` is a function that takes one argument, job element (see 'humblerl.pool(...)'
+    docstring) and returns 'Mind'. It's called once per each job ('hrl.loop(...)' execution).
+
+    Optionally, you can provide also `callbacks_factory` (which takes no arguments and returns
+    list of callbacks, it's shared between jobs) and `vision_factory` (which takes no arguments and
+    returns 'Vision' implementation, it's shared between jobs too).
+    """
+
+    @abstractmethod
+    def env_factory(self):
+        pass
+
+    @abstractmethod
+    def mind_factory(self, job):
+        pass
+
+    def callbacks_factory(self):
+        return []
+
+    def vision_factory(self):
+        return Vision()
+
+
 class Worker(object):
     """Loop worker."""
 
-    def __init__(self, env_factory, mind_factory, loop_kwargs):
-        self.env_factory = env_factory
-        self.mind_factory = mind_factory
+    def __init__(self, factory, loop_kwargs):
+        self.callbacks_factory = factory.callbacks_factory
+        self.env_factory = factory.env_factory
+        self.mind_factory = factory.mind_factory
+        self.vision_factory = factory.vision_factory
         self.loop_kwargs = loop_kwargs
 
+        self.callbacks = None
         self.env = None
+        self.vision = None
 
     def __call__(self, job):
+        if self.callbacks is None:
+            self.callbacks = self.callbacks_factory()
+
         if self.env is None:
             self.env = self.env_factory()
 
-        return loop(self.env, self.mind_factory(job), **self.loop_kwargs)
+        if self.vision is None:
+            self.vision = self.vision_factory()
+
+        return loop(self.env, self.mind_factory(job),
+                    vision=self.vision, callbacks=self.callbacks,
+                    **self.loop_kwargs)
 
 
 def ply(env, mind, policy='deterministic', vision=None, step=0, train_mode=True,
@@ -77,7 +120,7 @@ def ply(env, mind, policy='deterministic', vision=None, step=0, train_mode=True,
 
     # Create default vision if one wasn't passed
     vision = vision or Vision()
-    
+
     # Get current player and current state (preprocess it)
     curr_player = env.current_player
     curr_state, _ = vision(env.current_state)
@@ -278,23 +321,25 @@ def loop(env, minds, vision=None, n_episodes=1, max_steps=-1, policy='determinis
     return history.history
 
 
-def pool(env_factory, mind_factory, jobs, processes=None, **kwargs):
+def pool(factory, jobs, processes=None, **kwargs):
     """Runs `processes` number of workers which executes jobs (minds instances) in own environments.
 
     Args:
-        env_factory (callable): Function that takes no arguments and return 'Environment'.
-            Called once per worker and shared between jobs.
-        mind_factory (callable): Function that takes one argument, job element and returns 'Mind'.
-            Called once per each job ('hrl.loop(...)' execution on environment with mind).
+        factory (Factory): Provides factories to create env, minds, vision and callbacks list
+            in each worker. It needs to be picklable.
         jobs (iterable): Jobs (picklable objects) run by workers. Can be e.g. 'range(...)'.
         processes (int or None): Number of workers. If None then taken from 'os.cpu_count()'.
             (Default: None)
         **kwargs: Arguments passed to each 'hrl.loop(...)' execution. Copied to each worker.
+            You shouldn't provide 'vision' and 'callbacks' arguments. Use Factory object for this.
 
     Returns:
         list: History dictionaries from 'humblerl.loop(...)' of each job.
     """
 
-    worker = Worker(env_factory, mind_factory, kwargs)
+    assert 'vision' not in kwargs and 'callbacks' not in kwargs, \
+        "You shouldn't provide 'vision' and 'callbacks' arguments."
+
+    worker = Worker(factory, kwargs)
     with Pool(processes=processes) as pool:
         return pool.map(worker, jobs)
