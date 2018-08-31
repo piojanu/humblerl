@@ -14,63 +14,87 @@ Transition = namedtuple(
     "Transition", ["player", "state", "action", "reward", "next_player", "next_state", "is_terminal"])
 
 
-class Factory(metaclass=ABCMeta):
-    """Factory for loop worker.
-
-    While creating your implementation of Factory you have to implement
-    `env_factory` and `mind_factory`.
-    `env_factory` is a function that takes no arguments and returns 'Environment'. It's called once
-    per worker and returned environment is shared between jobs.
-    `mind_factory` is a function that takes one argument, job element (see 'humblerl.pool(...)'
-    docstring) and returns 'Mind'. It's called once per each job ('hrl.loop(...)' execution).
-
-    Optionally, you can provide also `callbacks_factory` (which takes no arguments and returns
-    list of callbacks, it's shared between jobs) and `vision_factory` (which takes no arguments and
-    returns 'Vision' implementation, it's shared between jobs too).
-    """
+class Worker(metaclass=ABCMeta):
+    """Worker to prepare environment, vision and callbacks for loop.
+    Also provides minds factory from jobs."""
 
     @abstractmethod
-    def env_factory(self):
+    def initialize(self):
+        """Called once per worker, should create environment and put it in 'self._env' member.
+        Can also provide vision and callbacks for loop. See 'vision' and 'callbacks' properties
+        which you need to override."""
+
         pass
 
     @abstractmethod
     def mind_factory(self, job):
+        """Called once per each job ('hrl.loop(...)' execution).
+
+        Args:
+            job (object): Provided to 'hrl.pool(...)' jobs iterable element.
+
+        Returns:
+            Mind: mind to use during job evaluation.
+        """
+
         pass
 
-    def callbacks_factory(self):
+    @property
+    def environment(self):
+        """This is just a getter.
+
+        Returns:
+            Environment: environment to evaluate minds in.
+
+        Note:
+            Environment should be constructed in 'Worker.initialize()' method.
+        """
+
+        # 'self._env' should be set in 'Worker.initialize()'.
+        return self._env
+
+    @property
+    def callbacks(self):
+        """This is just a getter.
+
+        Returns:
+            list: list of callbacks.
+
+        Note:
+            Callbacks should be constructed in 'Worker.initialize()' method.
+        """
+
+        # By default no callbacks.
         return []
 
-    def vision_factory(self):
+    @property
+    def vision(self):
+        """This is just a getter.
+
+        Returns:
+            Vision: humbler vision used to preprocess states and rewards during evaluation.
+
+        Note:
+            Vision should be constructed in 'Worker.initialize()' method.
+        """
+
+        # By default no preprocessing.
         return Vision()
 
 
-class Worker(object):
-    """Loop worker."""
+def initializer(worker, loop_kwargs):
+    global w, kwargs
+    kwargs = loop_kwargs
+    w = worker
+    w.initialize()
 
-    def __init__(self, factory, loop_kwargs):
-        self.callbacks_factory = factory.callbacks_factory
-        self.env_factory = factory.env_factory
-        self.mind_factory = factory.mind_factory
-        self.vision_factory = factory.vision_factory
-        self.loop_kwargs = loop_kwargs
 
-        self.callbacks = None
-        self.env = None
-        self.vision = None
+def evaluate(job):
+    global w, kwargs
 
-    def __call__(self, job):
-        if self.callbacks is None:
-            self.callbacks = self.callbacks_factory()
-
-        if self.env is None:
-            self.env = self.env_factory()
-
-        if self.vision is None:
-            self.vision = self.vision_factory()
-
-        return loop(self.env, self.mind_factory(job),
-                    vision=self.vision, callbacks=self.callbacks,
-                    **self.loop_kwargs)
+    return loop(w.environment, w.mind_factory(job),
+                vision=w.vision, callbacks=w.callbacks,
+                **kwargs)
 
 
 def ply(env, mind, policy='deterministic', vision=None, step=0, train_mode=True,
@@ -321,12 +345,12 @@ def loop(env, minds, vision=None, n_episodes=1, max_steps=-1, policy='determinis
     return history.history
 
 
-def pool(factory, jobs, processes=None, **kwargs):
+def pool(worker, jobs, processes=None, **kwargs):
     """Runs `processes` number of workers which executes jobs (minds instances) in own environments.
 
     Args:
-        factory (Factory): Provides factories to create env, minds, vision and callbacks list
-            in each worker. It needs to be picklable.
+        worker (Worker): Provides env, vision and callbacks list to each worker. It also implement
+            minds factory. It needs to be picklable.
         jobs (iterable): Jobs (picklable objects) run by workers. Can be e.g. 'range(...)'.
         processes (int or None): Number of workers. If None then taken from 'os.cpu_count()'.
             (Default: None)
@@ -340,6 +364,5 @@ def pool(factory, jobs, processes=None, **kwargs):
     assert 'vision' not in kwargs and 'callbacks' not in kwargs, \
         "You shouldn't provide 'vision' and 'callbacks' arguments."
 
-    worker = Worker(factory, kwargs)
-    with Pool(processes=processes) as pool:
-        return pool.map(worker, jobs)
+    with Pool(processes=processes, initializer=initializer, initargs=(worker, kwargs)) as pool:
+        return pool.map(evaluate, jobs)

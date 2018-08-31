@@ -6,7 +6,7 @@ import numpy as np
 import os.path
 import pickle
 
-from humblerl import Callback, Factory, Mind
+from humblerl import Callback, Mind, Worker
 from tqdm import tqdm
 
 
@@ -157,29 +157,31 @@ if __name__ == "__main__":
         population = solver.ask()
 
         # Evaluate population in parallel
-        class Evaluator(Factory):
+        class Evaluator(Worker):
             def __init__(self, state_size, action_size):
                 self.state_size = state_size
                 self.action_size = action_size
 
-            def env_factory(self):
-                return hrl.create_gym("CartPole-v0")
+            def initialize(self):
+                self._env = hrl.create_gym("CartPole-v0")
 
             def mind_factory(self, weights):
                 mind = LinearModel(self.state_size, self.action_size)
                 mind.set_weights(weights)
                 return mind
 
-            def callbacks_factory(self):
+            @property
+            def callbacks(self):
                 return [ReturnTracker()]
 
         hists = hrl.pool(
             Evaluator(env.state_space.shape[0], len(env.valid_actions)),
             jobs=population,
             processes=args.processes,
+            n_episodes=5,
             verbose=0
         )
-        returns = [hist['return'][0] for hist in hists]
+        returns = [np.mean(hist['return']) for hist in hists]
 
         # Print logs and update best return
         pbar.set_postfix(best=best_return, current=max(returns))
