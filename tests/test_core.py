@@ -66,3 +66,16 @@ class TestBasicCore(object):
         callback.on_episode_start.assert_called_once_with(0, train_mode)
         callback.on_episode_end.assert_called_once_with(0, train_mode)
         callback.on_loop_end.assert_called_once_with(False)
+
+    class invalid_callback(Callback):
+        def on_step_taken(self, step, transition, info):
+            a = 1/0
+
+    def test_loop_with_exception(self, env, mind, callback):
+        train_mode = False
+        handled_exception = False
+        try:
+            loop(env, mind, train_mode=train_mode, verbose=0, callbacks=[self.invalid_callback()])
+        except Exception:
+            handled_exception = True
+        assert handled_exception
