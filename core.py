@@ -275,6 +275,9 @@ def loop(env, minds, vision=None, n_episodes=1, max_steps=-1, policy='determinis
     Returns:
         dict of lists: Evaluation history. Those are callbacks metrics gathered through course of
             loop execution. Keys are metrics names and metrics values for each episode are in lists.
+
+    Note: When an exception is handled during loop execution, exception is thrown out of the function.
+
     """
 
     # Create callbacks list and "officially start loop"
@@ -334,11 +337,11 @@ def loop(env, minds, vision=None, n_episodes=1, max_steps=-1, policy='determinis
             # Change first player
             if isinstance(minds, (list, tuple)) and alternate_players:
                 first_player = (first_player + 1) % len(minds)
-    except KeyboardInterrupt:
+    except Exception as err:
         # Finish loop when aborted
-        log.critical("Safely terminating loop...")
+        log.critical("{}\nSafely terminating loop...".format(err))
         callbacks_list.on_loop_end(True)
-        raise  # Pass exception upper
+        raise err
 
     # Finish loop as planned
     callbacks_list.on_loop_end(False)
