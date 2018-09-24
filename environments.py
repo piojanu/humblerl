@@ -89,7 +89,7 @@ class MDP(metaclass=ABCMeta):
     """Interface for MDP, describes state and action spaces and their dynamics."""
 
     @abstractmethod
-    def simulate(self, state, action):
+    def transition(self, state, action):
         """Perform `action` in `state`. Return outcome.
 
         Args:
@@ -99,7 +99,6 @@ class MDP(metaclass=ABCMeta):
         Returns:
             object: New state.
             float: Reward.
-            bool: Flag indicating if episode has ended.
         """
 
         pass
@@ -123,6 +122,19 @@ class MDP(metaclass=ABCMeta):
 
         Returns:
             object: Available actions representation depends on environment.
+        """
+
+        pass
+
+    @abstractmethod
+    def is_terminal_state(self, state):
+        """Check if `state` is terminal.
+
+        Args:
+            state (object): MDP's state.
+
+        Returns:
+            bool: Whether state is terminal or not.
         """
 
         pass
