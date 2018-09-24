@@ -88,7 +88,7 @@ class LinearModel(Mind):
 
         self.weights = np.zeros((self.in_dim + 1, self.out_dim))
 
-    def plan(self, state, player, train_mode, debug_mode):
+    def plan(self, state, train_mode, debug_mode):
         return np.concatenate((state, [1.])) @ self.weights
 
     def set_weights(self, weights):

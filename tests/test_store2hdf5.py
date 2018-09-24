@@ -25,11 +25,9 @@ class TestStoreTransitions2Hdf5(object):
         transitions = []
         for idx in range(N_TRANSITIONS):
             transition = Transition(
-                player=idx,
                 state=np.random.randint(0, 256, size=(8, 8, 3)),
                 action=np.random.choice(ACTION_SPACE),
                 reward=np.random.normal(0, 1),
-                next_player=0,
                 next_state=np.random.randint(0, 256, size=(8, 8, 3)),
                 is_terminal=(idx + 1) % 16 == 0
             )
@@ -49,7 +47,7 @@ class TestStoreTransitions2Hdf5(object):
             assert np.all(h5py_file['next_states'][idx] == transition.next_state)
             assert np.allclose(
                 h5py_file['transitions'][idx],
-                [transition.player, transition.action, transition.reward, transition.is_terminal]
+                [transition.action, transition.reward, transition.is_terminal]
             )
 
     def test_continous_states(self):
@@ -67,11 +65,9 @@ class TestStoreTransitions2Hdf5(object):
         transitions = []
         for idx in range(N_TRANSITIONS):
             transition = Transition(
-                player=idx,
                 state=np.random.uniform(STATE_SPACE.T[0], STATE_SPACE.T[1]),
                 action=np.random.choice(ACTION_SPACE),
                 reward=np.random.normal(0, 1),
-                next_player=0,
                 next_state=np.random.uniform(STATE_SPACE.T[0], STATE_SPACE.T[1]),
                 is_terminal=(idx + 1) % 16 == 0
             )
@@ -91,7 +87,7 @@ class TestStoreTransitions2Hdf5(object):
             assert np.all(h5py_file['next_states'][idx] == transition.next_state)
             assert np.allclose(
                 h5py_file['transitions'][idx],
-                [transition.player, transition.action, transition.reward, transition.is_terminal]
+                [transition.action, transition.reward, transition.is_terminal]
             )
 
     def test_shuffle_chunks(self):
@@ -113,16 +109,14 @@ class TestStoreTransitions2Hdf5(object):
         for idx in range(N_TRANSITIONS):
             states.append(np.random.uniform(STATE_SPACE.T[0], STATE_SPACE.T[1]).tolist())
             next_states.append(np.random.uniform(STATE_SPACE.T[0], STATE_SPACE.T[1]).tolist())
-            transitions.append((idx, np.random.choice(ACTION_SPACE), np.random.normal(0, 1), 0))
+            transitions.append((np.random.choice(ACTION_SPACE), np.random.normal(0, 1), 0))
 
             callback.on_step_taken(idx, Transition(
-                player=transitions[-1][0],
                 state=states[-1],
-                action=transitions[-1][1],
-                reward=transitions[-1][2],
-                next_player=0,
+                action=transitions[-1][0],
+                reward=transitions[-1][1],
                 next_state=next_states[-1],
-                is_terminal=transitions[-1][3]
+                is_terminal=transitions[-1][2]
             ), None)
 
         in_order = True
