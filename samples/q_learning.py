@@ -18,7 +18,7 @@ class TabularQLearning(Mind, Callback):
         # Initialize Q-table
         self.Q = np.zeros((nstates, nactions), dtype=np.float)
 
-    def plan(self, state, player, train_mode, debug_mode):
+    def plan(self, state, train_mode, debug_mode):
         # Decaying over time random noise for exploration
         random_noise = np.random.randn(self.Q.shape[1]) * (1./self._episode_count)
         return self.Q[state] + random_noise

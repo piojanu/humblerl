@@ -7,12 +7,11 @@ class Mind(metaclass=ABCMeta):
     """Artificial mind of RL agent."""
 
     @abstractmethod
-    def plan(self, state, player, train_mode, debug_mode):
-        """Do forward pass through agent model, inference/planning on state.
+    def plan(self, state, train_mode, debug_mode):
+        """Do forward pass through agent model (inference/planning) on state.
 
         Args:
-            state (np.array): State of environment to inference on.
-            player (int): Current player index.
+            state (object): State of environment to inference on.
             train_mode (bool): Informs planner whether it's in training or evaluation mode.
                 E.g. in evaluation it can optimise graph, disable exploration etc.
             debug_mode (bool): Informs planner whether it's in debug mode or not.
@@ -66,7 +65,7 @@ class RandomAgent(Mind):
 
         self.action_space = action_space
 
-    def plan(self, state, player, train_mode, debug_mode):
+    def plan(self, state, train_mode, debug_mode):
         """Ignores all arguments and return random action from action space.
 
         Args:

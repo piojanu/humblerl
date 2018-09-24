@@ -223,7 +223,7 @@ class StoreTransitions2Hdf5(Callback):
         * 'states': Keeps transition's state (e.g. image).
         * 'next_states': Keeps transition's next state (e.g. image).
         * 'transitions': Keeps additional information about transition
-                         (i.e. player id, action, reward, is_terminal).
+                         (i.e. action, reward, is_terminal).
         Datasets are organized in such a way, that you can access transition 'I' by accessing
         'I'-th position in all three datasets.
 
@@ -261,7 +261,7 @@ class StoreTransitions2Hdf5(Callback):
         self.shuffle_chunk = shuffle
         self.min_transitions = min_transitions
         self.state_dtype = dtype
-        transition_columns = ["player", "action", "reward", "is_terminal"]
+        transition_columns = ["action", "reward", "is_terminal"]
 
         # Make sure that path to out file exists
         if not os.path.exists(os.path.dirname(out_path)):
@@ -298,7 +298,7 @@ class StoreTransitions2Hdf5(Callback):
         self.states.append(transition.state)
         self.next_states.append(transition.next_state)
         self.transitions.append(
-            [transition.player, transition.action, transition.reward, transition.is_terminal])
+            [transition.action, transition.reward, transition.is_terminal])
 
         if transition.is_terminal:
             self.game_count += 1
