@@ -21,7 +21,7 @@ Run `pytest` in repo root directory.
 * ...add symbolic link to directory containing `humblerl` in your Python's installation `site-packages` dir.
 
 ## Samples:
-We are currently working on research project "Transfer Learning in Reinforcement Learning" and we are developing this small tool as we go. We will publish sample code (how we use this tool) some time in the future. You can expect [AlphaZero](http://tim.hibal.org/blog/alpha-zero-how-and-why-it-works/) and [World Model](https://worldmodels.github.io) implementations in this framework.
+We are currently working on research project "Transfer Learning in Reinforcement Learning" and we are developing this small tool as we go. Right now you can find usage examples in `samples` directory. You can also look at [AlphaZero](https://github.com/piojanu/AlphaZero) and [World Model](https://github.com/piojanu/World-Models) implementations in this framework.
 
 ## What we are currently working on?
 The most important things now are to improve logging and visualization capabilities, but also add support for more environments. Visualizing and training supervision should be easy-peasy and one should be able to run experiments in many many environments! We are waiting for you contribution :smile:
