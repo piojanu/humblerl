@@ -56,7 +56,7 @@ class Environment(metaclass=ABCMeta):
 
     @abstractproperty
     def state_space(self):
-        """Get environment state space definition.
+        """Get state space definition.
 
         Returns:
             object: State space representation depends on environment.
