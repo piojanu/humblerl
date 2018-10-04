@@ -120,7 +120,7 @@ if __name__ == "__main__":
     parser.add_argument('--popsize', type=int, default=100, metavar='N',
                         help='population size (default: 100)')
     parser.add_argument('--processes', type=int, default=None, metavar='N',
-                        help='size of process pool for evaluation (default: CPU count')
+                        help='size of process pool for evaluation (default: CPU count)')
     parser.add_argument('--decay', type=float, default=0.01, metavar='L2',
                         help='L2 weight decay rate (default: 0.01)')
     parser.add_argument('--ckpt', type=str, default=None, metavar='PATH',
