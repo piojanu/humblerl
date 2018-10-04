@@ -164,7 +164,8 @@ class CSVSaverWrapper(CallbackList):
         self.history.append(self.unwrapped.metrics)
 
     def on_loop_end(self, is_aborted):
-        self._store()
+        if len(self.history) > 0:
+            self._store()
         self.unwrapped.on_loop_end(is_aborted)
 
     @property
