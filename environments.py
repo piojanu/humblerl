@@ -6,7 +6,12 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 
 
 class Environment(metaclass=ABCMeta):
-    """Abstract class for environments."""
+    """Abstract class for environments.
+
+    Note:
+        Currently only discrete action space is supported! Actions have to be numbers in range
+        [0, `self.action_space`).
+    """
 
     @abstractmethod
     def render(self):
@@ -49,7 +54,7 @@ class Environment(metaclass=ABCMeta):
         """Get action space definition.
 
         Returns:
-            object: Action space representation depends on environment.
+            int: Number of actions.
         """
 
         pass
@@ -79,14 +84,19 @@ class Environment(metaclass=ABCMeta):
         """Get currently available actions.
 
         Returns:
-            object: Available actions representation depends on environment.
+            np.ndarray: Array with enumerated valid actions for current state.
         """
 
         pass
 
 
 class MDP(metaclass=ABCMeta):
-    """Interface for MDP, describes state and action spaces and their dynamics."""
+    """Interface for MDP, describes state and action spaces and their dynamics.
+
+    Note:
+        Currently only discrete action space is supported! Actions have to be numbers in range
+        [0, `self.action_space`).
+    """
 
     @abstractmethod
     def transition(self, state, action):
@@ -121,7 +131,7 @@ class MDP(metaclass=ABCMeta):
             state (object): MDP's state.
 
         Returns:
-            object: Available actions representation depends on environment.
+            np.ndarray: Array with enumerated valid actions for given state.
         """
 
         pass
@@ -144,7 +154,7 @@ class MDP(metaclass=ABCMeta):
         """Get action space definition.
 
         Returns:
-            object: Action space representation depends on model.
+            int: Number of actions.
         """
 
         pass
