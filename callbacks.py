@@ -265,8 +265,9 @@ class StoreTransitions2Hdf5(Callback):
         transition_columns = ["action", "reward", "is_terminal"]
 
         # Make sure that path to out file exists
-        if not os.path.exists(os.path.dirname(out_path)):
-            os.makedirs(os.path.dirname(out_path))
+        dirname = os.path.dirname(out_path)
+        if dirname and not os.path.exists(dirname):
+            os.makedirs(dirname)
 
         # Create output hdf5 file and fill metadata
         self.out_file = h5py.File(out_path, "w")
