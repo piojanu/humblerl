@@ -219,12 +219,9 @@ class BasicStats(Callback):
         self.rewards = []
 
 
-class StoreTransitions2Hdf5(Callback):
+class StoreStates2Hdf5(Callback):
     """Save transitions to HDF5 file in three datasets:
         * 'states': Keeps transition's state (e.g. image).
-        * 'next_states': Keeps transition's next state (e.g. image).
-        * 'transitions': Keeps additional information about transition
-                         (i.e. action, reward, is_terminal).
         Datasets are organized in such a way, that you can access transition 'I' by accessing
         'I'-th position in all three datasets.
 
@@ -232,16 +229,13 @@ class StoreTransitions2Hdf5(Callback):
         * 'N_TRANSITIONS': Datasets size (number of transitions).
         * 'N_GAMES': From how many games those transitions come from.
         * 'CHUNK_SIZE': HDF5 file chunk size (batch size should be multiple of it).
-        * 'ACTION_SPACE': Action space taken from 'humblerl.Environment'.
         * 'STATE_SHAPE': Shape of environment's state ('(next_)states' dataset element shape).
     """
 
-    def __init__(self, action_space, state_shape, out_path,
-                 shuffle=True, min_transitions=10000, chunk_size=128, dtype=np.uint8):
+    def __init__(self, state_shape, out_path, shuffle=True, min_transitions=10000, chunk_size=128, dtype=np.uint8):
         """Save transitions to HDF5 file.
 
         Args:
-            action_space (np.ndarray): Action space of Environment.
             state_shape (tuple): Shape of environment's state.
             out_path (str): Path to HDF5 file where transition will be stored.
             shuffle (bool): If data should be shuffled (in subsets of `min_transitions` number of
@@ -262,7 +256,6 @@ class StoreTransitions2Hdf5(Callback):
         self.shuffle_chunk = shuffle
         self.min_transitions = min_transitions
         self.state_dtype = dtype
-        transition_columns = ["action", "reward", "is_terminal"]
 
         # Make sure that path to out file exists
         dirname = os.path.dirname(out_path)
@@ -274,33 +267,22 @@ class StoreTransitions2Hdf5(Callback):
         self.out_file.attrs["N_TRANSITIONS"] = 0
         self.out_file.attrs["N_GAMES"] = 0
         self.out_file.attrs["CHUNK_SIZE"] = chunk_size
-        self.out_file.attrs["ACTION_SPACE"] = action_space
         self.out_file.attrs["STATE_SHAPE"] = state_shape
 
-        # Create datasets for states, next_states and transitions
+        # Create dataset for states
         # NOTE: We save states as np.uint8 dtype because those are RGB pixel values.
         self.out_states = self.out_file.create_dataset(
             name="states", dtype=dtype, chunks=(chunk_size, *state_shape),
-            shape=(self.dataset_size, *state_shape), maxshape=(None, *state_shape))
-        self.out_next_states = self.out_file.create_dataset(
-            name="next_states", dtype=dtype, chunks=(chunk_size, *state_shape),
-            shape=(self.dataset_size, *state_shape), maxshape=(None, *state_shape))
-        self.out_transitions = self.out_file.create_dataset(
-            name="transitions", dtype="f", chunks=(chunk_size, len(transition_columns)),
-            shape=(self.dataset_size, len(transition_columns)), maxshape=(None, len(transition_columns)))
+            shape=(self.dataset_size, *state_shape), maxshape=(None, *state_shape),
+            compression="lzf")
 
         self.transition_count = 0
         self.game_count = 0
 
         self.states = []
-        self.next_states = []
-        self.transitions = []
 
     def on_step_taken(self, step, transition, info):
         self.states.append(transition.state)
-        self.next_states.append(transition.next_state)
-        self.transitions.append(
-            [transition.action, transition.reward, transition.is_terminal])
 
         if transition.is_terminal:
             self.game_count += 1
@@ -317,14 +299,12 @@ class StoreTransitions2Hdf5(Callback):
         self.out_file.close()
 
     def _save_chunk(self):
-        """Save `states`, `next_states` and `transitions` to HDF5 file. Clear the buffers.
+        """Save `states`  to HDF5 file. Clear the buffers.
         Update transition and games count in HDF5 file."""
 
         # Resize datasets if needed
         if self.transition_count > self.dataset_size:
             self.out_states.resize(self.transition_count, axis=0)
-            self.out_next_states.resize(self.transition_count, axis=0)
-            self.out_transitions.resize(self.transition_count, axis=0)
             self.dataset_size = self.transition_count
 
         n_transitions = len(self.states)
@@ -334,27 +314,16 @@ class StoreTransitions2Hdf5(Callback):
 
         if self.shuffle_chunk:
             states = []
-            next_states = []
-            transitions = []
 
             for idx in random.sample(range(n_transitions), n_transitions):
                 states.append(self.states[idx])
-                next_states.append(self.next_states[idx])
-                transitions.append(self.transitions[idx])
         else:
             states = self.states
-            next_states = self.next_states
-            transitions = self.transitions
 
         self.out_states[start:self.transition_count] = \
             np.array(states, dtype=self.state_dtype)
-        self.out_next_states[start:self.transition_count] = \
-            np.array(next_states, dtype=self.state_dtype)
-        self.out_transitions[start:self.transition_count] = transitions
 
         self.out_file.attrs["N_TRANSITIONS"] = self.transition_count
         self.out_file.attrs["N_GAMES"] = self.game_count
 
         self.states = []
-        self.next_states = []
-        self.transitions = []

@@ -2,7 +2,7 @@ import h5py
 import numpy as np
 
 from .. import Transition
-from ..callbacks import StoreTransitions2Hdf5
+from ..callbacks import StoreStates2Hdf5
 
 HDF5_PATH = "/tmp/test_humblerl_callback.hdf5"
 
@@ -19,9 +19,9 @@ class TestStoreTransitions2Hdf5(object):
         CHUNK_SIZE = 48
         N_TRANSITIONS = 1024
 
-        callback = StoreTransitions2Hdf5(ACTION_SPACE, STATE_SPACE_SHAPE, HDF5_PATH,
-                                         shuffle=False, min_transitions=MIN_TRANSITIONS,
-                                         chunk_size=CHUNK_SIZE, dtype=np.uint8)
+        callback = StoreStates2Hdf5(STATE_SPACE_SHAPE, HDF5_PATH,
+                                    shuffle=False, min_transitions=MIN_TRANSITIONS,
+                                    chunk_size=CHUNK_SIZE, dtype=np.uint8)
         transitions = []
         for idx in range(N_TRANSITIONS):
             transition = Transition(
@@ -39,16 +39,10 @@ class TestStoreTransitions2Hdf5(object):
         assert h5py_file.attrs["N_TRANSITIONS"] == N_TRANSITIONS
         assert h5py_file.attrs["N_GAMES"] == N_TRANSITIONS // 16
         assert h5py_file.attrs["CHUNK_SIZE"] == CHUNK_SIZE
-        assert np.all(h5py_file.attrs["ACTION_SPACE"] == ACTION_SPACE)
         assert np.all(h5py_file.attrs["STATE_SHAPE"] == STATE_SPACE_SHAPE)
 
         for idx, transition in enumerate(transitions):
             assert np.all(h5py_file['states'][idx] == transition.state)
-            assert np.all(h5py_file['next_states'][idx] == transition.next_state)
-            assert np.allclose(
-                h5py_file['transitions'][idx],
-                [transition.action, transition.reward, transition.is_terminal]
-            )
 
     def test_continous_states(self):
         ACTION_SPACE = np.array([1, 2, 3])
@@ -59,9 +53,9 @@ class TestStoreTransitions2Hdf5(object):
         CHUNK_SIZE = 48
         N_TRANSITIONS = 1024
 
-        callback = StoreTransitions2Hdf5(ACTION_SPACE, STATE_SPACE_SHAPE, HDF5_PATH,
-                                         shuffle=False, min_transitions=MIN_TRANSITIONS,
-                                         chunk_size=CHUNK_SIZE, dtype=np.float)
+        callback = StoreStates2Hdf5(STATE_SPACE_SHAPE, HDF5_PATH,
+                                    shuffle=False, min_transitions=MIN_TRANSITIONS,
+                                    chunk_size=CHUNK_SIZE, dtype=np.float)
         transitions = []
         for idx in range(N_TRANSITIONS):
             transition = Transition(
@@ -79,16 +73,10 @@ class TestStoreTransitions2Hdf5(object):
         assert h5py_file.attrs["N_TRANSITIONS"] == N_TRANSITIONS
         assert h5py_file.attrs["N_GAMES"] == N_TRANSITIONS // 16
         assert h5py_file.attrs["CHUNK_SIZE"] == CHUNK_SIZE
-        assert np.all(h5py_file.attrs["ACTION_SPACE"] == ACTION_SPACE)
         assert np.all(h5py_file.attrs["STATE_SHAPE"] == STATE_SPACE_SHAPE)
 
         for idx, transition in enumerate(transitions):
             assert np.all(h5py_file['states'][idx] == transition.state)
-            assert np.all(h5py_file['next_states'][idx] == transition.next_state)
-            assert np.allclose(
-                h5py_file['transitions'][idx],
-                [transition.action, transition.reward, transition.is_terminal]
-            )
 
     def test_shuffle_chunks(self):
         ACTION_SPACE = np.array([1, 2, 3])
@@ -99,9 +87,9 @@ class TestStoreTransitions2Hdf5(object):
         CHUNK_SIZE = 48
         N_TRANSITIONS = 48
 
-        callback = StoreTransitions2Hdf5(ACTION_SPACE, STATE_SPACE_SHAPE, HDF5_PATH,
-                                         shuffle=True, min_transitions=MIN_TRANSITIONS,
-                                         chunk_size=CHUNK_SIZE, dtype=np.float)
+        callback = StoreStates2Hdf5(STATE_SPACE_SHAPE, HDF5_PATH,
+                                    shuffle=True, min_transitions=MIN_TRANSITIONS,
+                                    chunk_size=CHUNK_SIZE, dtype=np.float)
 
         states = []
         next_states = []
@@ -123,15 +111,11 @@ class TestStoreTransitions2Hdf5(object):
         h5py_file = h5py.File(HDF5_PATH, "r")
         for idx in range(N_TRANSITIONS):
             state = h5py_file['states'][idx]
-            next_state = h5py_file['next_states'][idx]
-            transition = h5py_file['transitions'][idx]
 
             idx_target = states.index(state.tolist())
             if idx != idx_target:
                 in_order = False
 
             assert np.all(h5py_file['states'][idx] == states[idx_target])
-            assert np.all(h5py_file['next_states'][idx] == next_states[idx_target])
-            assert np.allclose(h5py_file['transitions'][idx], transitions[idx_target])
 
         assert not in_order, "Data isn't shuffled!"
