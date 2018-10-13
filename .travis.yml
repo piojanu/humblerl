@@ -5,8 +5,8 @@ python:
   - "3.5"
   - "3.6"
 install:
-  - pip install -r requirements.txt
+  - pip install -e .
   - pip install -r samples/requirements.txt
 script:
   - pytest
-  - PYTHONPATH=.. python samples/cma_es.py --epochs 10 --popsize 50
+  - python samples/cma_es.py --epochs 10 --popsize 50
