@@ -75,3 +75,19 @@ class TestGymEnvironment(object):
         for action in env.valid_actions:
             state, reward, done, info = env.step(action)
             assert np.all(env.current_state == state)
+
+    def test_random_maze_env(self):
+        """Test random maze environment parameters."""
+
+        env = create_gym("MazeEnv-v0")
+
+        assert np.all(env.state_space.shape == (21, 21, 2))
+        assert np.all(env.valid_actions == np.array(range(4)))
+        assert env.action_space == 4
+
+        state = env.reset()
+        assert np.all(env.current_state == state)
+
+        for action in env.valid_actions:
+            state, reward, done, info = env.step(action)
+            assert np.all(env.current_state == state)

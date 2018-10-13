@@ -1,4 +1,5 @@
 import gym
+import gym_maze
 import gym_sokoban
 import numpy as np
 
