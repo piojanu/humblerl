@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from .. import ply, loop, Callback, Environment, Mind, Transition
+from humblerl import ply, loop, Callback, Environment, Mind, Transition
 from unittest.mock import MagicMock, PropertyMock
 
 

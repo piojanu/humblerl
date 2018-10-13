@@ -1,8 +1,8 @@
 import h5py
 import numpy as np
 
-from .. import Transition
-from ..callbacks import StoreStates2Hdf5
+from humblerl import Transition
+from humblerl.callbacks import StoreStates2Hdf5
 
 HDF5_PATH = "/tmp/test_humblerl_callback.hdf5"
 
