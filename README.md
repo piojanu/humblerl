@@ -17,8 +17,7 @@ It's not a deep learning framework! It's designed to work with them to build age
 Run `pytest` in repo root directory.
 
 ### "Install"
-* Add directory containing `humblerl` repo to `PYTHONPATH` or...
-* ...add symbolic link to directory containing `humblerl` in your Python's installation `site-packages` dir.
+* Run `pip install -e .` in repo root directory.
 
 ## Samples:
 We are currently working on research project "Transfer Learning in Reinforcement Learning" and we are developing this small tool as we go. Right now you can find usage examples in `samples` directory. You can also look at [AlphaZero](https://github.com/piojanu/AlphaZero) and [World Models](https://github.com/piojanu/World-Models) implementations in this framework.
