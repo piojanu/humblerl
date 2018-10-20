@@ -56,14 +56,14 @@ class Vision(object):
 class RandomAgent(Mind):
     """Mind that acts at random (uniformly)."""
 
-    def __init__(self, action_space):
+    def __init__(self, env):
         """Initialize random agent.
 
         Args:
-            action_space (int): Number of possible actions. 
+            env (Environment): Game's environment.
         """
 
-        self.action_space = np.arange(action_space)
+        self.env = env
 
     def plan(self, state, train_mode, debug_mode):
         """Ignores all arguments and return random action from action space.
@@ -72,9 +72,12 @@ class RandomAgent(Mind):
             ...see `hrl.Environment::valid_actions` docstring...
 
         Returns:
-            np.ndarray: One hot action vector.
+            np.ndarray: Action vector (one-hot for discrete envs).
         """
 
-        one_hot = np.zeros_like(self.action_space)
-        one_hot[np.random.choice(self.action_space)] = 1
-        return one_hot
+        action = self.env.sample_action()
+        if self.env.is_discrete:
+            one_hot = np.zeros(self.env.action_space.num)
+            one_hot[action] = 1
+            action = one_hot
+        return action

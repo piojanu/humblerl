@@ -271,6 +271,7 @@ def loop(env, mind, vision=None, n_episodes=1, max_steps=-1, policy='determinist
     Note: When an exception is handled during loop execution, exception is thrown out of the function.
 
     """
+    policy = 'identity' if env.is_continuous else policy
 
     # Create callbacks list and "officially start loop"
     callbacks_list = CallbackList(callbacks)
