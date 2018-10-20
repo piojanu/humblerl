@@ -6,12 +6,7 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 
 
 class Environment(metaclass=ABCMeta):
-    """Abstract class for environments.
-
-    Note:
-        Currently only discrete action space is supported! Actions have to be numbers in range
-        [0, `self.action_space`).
-    """
+    """Abstract class for environments."""
 
     @abstractmethod
     def render(self):
@@ -54,7 +49,7 @@ class Environment(metaclass=ABCMeta):
         """Get action space definition.
 
         Returns:
-            int: Number of actions.
+            ActionSpace: Action space, discrete or continuous.
         """
 
         pass
@@ -89,14 +84,38 @@ class Environment(metaclass=ABCMeta):
 
         pass
 
+    def sample_action(self):
+        """Sample an action from action space.
+
+        Returns:
+            object: Random action.
+        """
+
+        return self.action_space.sample()
+
+    @property
+    def is_discrete(self):
+        """Check if env's action space is discrete.
+
+        Returns:
+            bool: True if env is discrete, False otherwise.
+        """
+
+        return isinstance(self.action_space, Discrete)
+
+    @property
+    def is_continuous(self):
+        """Check if env's action space is continuous.
+
+        Returns:
+            bool: True if env is continuous, False otherwise.
+        """
+
+        return isinstance(self.action_space, Continuous)
+
 
 class MDP(metaclass=ABCMeta):
-    """Interface for MDP, describes state and action spaces and their dynamics.
-
-    Note:
-        Currently only discrete action space is supported! Actions have to be numbers in range
-        [0, `self.action_space`).
-    """
+    """Interface for MDP, describes state and action spaces and their dynamics."""
 
     @abstractmethod
     def transition(self, state, action):
@@ -154,7 +173,7 @@ class MDP(metaclass=ABCMeta):
         """Get action space definition.
 
         Returns:
-            int: Number of actions.
+            ActionSpace: Action space, discrete or continuous.
         """
 
         pass
@@ -168,3 +187,47 @@ class MDP(metaclass=ABCMeta):
         """
 
         pass
+
+
+class ActionSpace(metaclass=ABCMeta):
+    """Interface for action spaces."""
+
+    @abstractmethod
+    def sample(self):
+        """Sample an action from action space.
+
+        Returns:
+            object: Random action.
+        """
+
+        pass
+
+
+class Discrete(ActionSpace):
+    def __init__(self, num):
+        """Initialize discrete action space.
+
+        Args:
+            num (int): Number of available actions.
+        """
+        self.num = num
+
+    def sample(self):
+        return np.random.choice(range(self.num))
+
+
+class Continuous(ActionSpace):
+    def __init__(self, num, low, high):
+        """Initialize continuous action space.
+
+        Args:
+            num (int): Number of action parameters.
+            low (np.ndarray): Minimum values for each action parameter.
+            high (np.ndarray): Maximum values for each action parameter.
+        """
+        self.num = num
+        self.low = low
+        self.high = high
+
+    def sample(self):
+        return np.random.uniform(self.low, self.high)

@@ -3,14 +3,14 @@ import gym_maze
 import gym_sokoban
 import numpy as np
 
-from .environments import Environment
+from .environments import Environment, Discrete, Continuous
 
 
 class GymEnvironment(Environment):
     """Wrapper on OpenAI Gym toolkit environments."""
 
     def __init__(self, env):
-        "Initialize OpenAI Gym wrapper"
+        """Initialize OpenAI Gym wrapper"""
 
         self.env = env
 
@@ -29,9 +29,11 @@ class GymEnvironment(Environment):
         act_space = self.env.action_space
         if isinstance(act_space, gym.spaces.Discrete):
             self._valid_actions = np.array(list(range(act_space.n)))
-            self._action_space = act_space.n
+            self._action_space = Discrete(num=act_space.n)
         else:
-            raise ValueError("For OpenAI Gym only discrete action space is supported")
+            n_params = len(act_space.low)
+            self._valid_actions = np.array(list(range(n_params)))
+            self._action_space = Continuous(num=n_params, low=act_space.low, high=act_space.high)
 
     def reset(self, train_mode=True):
         """Reset environment and return a first state.
@@ -64,10 +66,6 @@ class GymEnvironment(Environment):
             object: Environment diagnostic information if available, otherwise None.
         """
 
-        # For now we only support discrete action spaces in OpenAI Gym
-        assert not isinstance(action, np.ndarray), \
-            "For OpenAI Gym only discrete action space is supported"
-
         self._current_state, reward, done, info = self.env.step(action)
         return self._current_state, reward, done, info
 
@@ -81,7 +79,7 @@ class GymEnvironment(Environment):
         """Get action space definition.
 
         Returns:
-            int: Number of actions.
+            object: Action space, Discrete or Continuous.
         """
 
         return self._action_space
