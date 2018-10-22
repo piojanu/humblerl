@@ -1,14 +1,21 @@
+import os
+import tempfile
 import h5py
 import numpy as np
 
 from humblerl import Transition
 from humblerl.callbacks import StoreStates2Hdf5
 
-HDF5_PATH = "/tmp/test_humblerl_callback.hdf5"
-
 
 class TestStoreTransitions2Hdf5(object):
     """Test callback on 3D (e.g. images) and continuous states."""
+
+    def setup(self):
+        self.hdf5_file, self.hdf5_path = tempfile.mkstemp()
+
+    def teardown(self):
+        os.close(self.hdf5_file)
+        os.remove(self.hdf5_path)
 
     def test_images_states(self):
         ACTION_SPACE = np.array([1, 2, 3])
@@ -19,7 +26,7 @@ class TestStoreTransitions2Hdf5(object):
         CHUNK_SIZE = 48
         N_TRANSITIONS = 1024
 
-        callback = StoreStates2Hdf5(STATE_SPACE_SHAPE, HDF5_PATH,
+        callback = StoreStates2Hdf5(STATE_SPACE_SHAPE, self.hdf5_path,
                                     shuffle=False, min_transitions=MIN_TRANSITIONS,
                                     chunk_size=CHUNK_SIZE, dtype=np.uint8)
         transitions = []
@@ -35,7 +42,7 @@ class TestStoreTransitions2Hdf5(object):
             callback.on_step_taken(idx, transition, None)
         callback.on_loop_end(False)
 
-        h5py_file = h5py.File(HDF5_PATH, "r")
+        h5py_file = h5py.File(self.hdf5_path, "r")
         assert h5py_file.attrs["N_TRANSITIONS"] == N_TRANSITIONS
         assert h5py_file.attrs["N_GAMES"] == N_TRANSITIONS // 16
         assert h5py_file.attrs["CHUNK_SIZE"] == CHUNK_SIZE
@@ -53,7 +60,7 @@ class TestStoreTransitions2Hdf5(object):
         CHUNK_SIZE = 48
         N_TRANSITIONS = 1024
 
-        callback = StoreStates2Hdf5(STATE_SPACE_SHAPE, HDF5_PATH,
+        callback = StoreStates2Hdf5(STATE_SPACE_SHAPE, self.hdf5_path,
                                     shuffle=False, min_transitions=MIN_TRANSITIONS,
                                     chunk_size=CHUNK_SIZE, dtype=np.float)
         transitions = []
@@ -69,7 +76,7 @@ class TestStoreTransitions2Hdf5(object):
             callback.on_step_taken(idx, transition, None)
         callback.on_loop_end(False)
 
-        h5py_file = h5py.File(HDF5_PATH, "r")
+        h5py_file = h5py.File(self.hdf5_path, "r")
         assert h5py_file.attrs["N_TRANSITIONS"] == N_TRANSITIONS
         assert h5py_file.attrs["N_GAMES"] == N_TRANSITIONS // 16
         assert h5py_file.attrs["CHUNK_SIZE"] == CHUNK_SIZE
@@ -87,7 +94,7 @@ class TestStoreTransitions2Hdf5(object):
         CHUNK_SIZE = 48
         N_TRANSITIONS = 48
 
-        callback = StoreStates2Hdf5(STATE_SPACE_SHAPE, HDF5_PATH,
+        callback = StoreStates2Hdf5(STATE_SPACE_SHAPE, self.hdf5_path,
                                     shuffle=True, min_transitions=MIN_TRANSITIONS,
                                     chunk_size=CHUNK_SIZE, dtype=np.float)
 
@@ -108,7 +115,7 @@ class TestStoreTransitions2Hdf5(object):
             ), None)
 
         in_order = True
-        h5py_file = h5py.File(HDF5_PATH, "r")
+        h5py_file = h5py.File(self.hdf5_path, "r")
         for idx in range(N_TRANSITIONS):
             state = h5py_file['states'][idx]
 
