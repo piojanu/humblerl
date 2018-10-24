@@ -15,6 +15,10 @@ for entry in required:
 for entry in dependency_links:
     os.system("pip install {}".format(entry))
 
-setup(name='humblerl',
+setup(name='HumbleRL',
       version='0.0.1',
+      description='Straightforward reinforcement learning Python framework',
+      author='Piotr Januszewski, Grzegorz Beringer, Mateusz Jablonski',
+      url='https://github.com/piojanu/humblerl',
+      licence='MIT',
       install_requires=install_requires)
