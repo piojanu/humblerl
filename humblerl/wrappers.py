@@ -79,7 +79,7 @@ class GymEnvironment(Environment):
         """Get action space definition.
 
         Returns:
-            object: Action space, Discrete or Continuous.
+            ActionSpace: Action space, discrete or continuous.
         """
 
         return self._action_space
