@@ -152,7 +152,7 @@ def ply(env, mind, policy='deterministic', vision=None, step=0, train_mode=True,
 
     # Get valid actions and logits of those actions
     valid_actions = env.valid_actions
-    valid_logits = np.take(logits, valid_actions)
+    valid_logits = np.take(logits, valid_actions) if isinstance(valid_actions, np.ndarray) else logits
 
     # Define policies
     def deterministic():
@@ -271,6 +271,7 @@ def loop(env, mind, vision=None, n_episodes=1, max_steps=-1, policy='determinist
     Note: When an exception is handled during loop execution, exception is thrown out of the function.
 
     """
+
     policy = 'identity' if env.is_continuous else policy
 
     # Create callbacks list and "officially start loop"

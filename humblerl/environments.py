@@ -79,7 +79,9 @@ class Environment(metaclass=ABCMeta):
         """Get currently available actions.
 
         Returns:
-            np.ndarray: Array with enumerated valid actions for current state.
+            np.ndarray/Continuous: Discrete env: np.ndarray with enumerated valid actions
+                for current state. Continous env: Action space, since there is no choice
+                of actions and the whole action space is valid.
         """
 
         pass
@@ -210,6 +212,7 @@ class Discrete(ActionSpace):
         Args:
             num (int): Number of available actions.
         """
+
         self.num = num
 
     def sample(self):
@@ -225,6 +228,7 @@ class Continuous(ActionSpace):
             low (np.ndarray): Minimum values for each action parameter.
             high (np.ndarray): Maximum values for each action parameter.
         """
+
         self.num = num
         self.low = low
         self.high = high

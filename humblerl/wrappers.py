@@ -32,8 +32,8 @@ class GymEnvironment(Environment):
             self._action_space = Discrete(num=act_space.n)
         else:
             n_params = len(act_space.low)
-            self._valid_actions = np.array(list(range(n_params)))
             self._action_space = Continuous(num=n_params, low=act_space.low, high=act_space.high)
+            self._valid_actions = self._action_space
 
     def reset(self, train_mode=True):
         """Reset environment and return a first state.
@@ -112,7 +112,9 @@ class GymEnvironment(Environment):
         """Get currently available actions.
 
         Returns:
-            np.ndarray: It's a 1D array with available action values.
+            np.ndarray/Continuous: Discrete env: np.ndarray with enumerated valid actions
+                for current state. Continous env: Action space, since there is no choice
+                of actions and the whole action space is valid.
         """
 
         return self._valid_actions
