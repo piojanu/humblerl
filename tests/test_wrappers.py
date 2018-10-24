@@ -1,7 +1,7 @@
 import numpy as np
 
 from humblerl import create_gym
-from humblerl.environments import Continuous
+from humblerl.environments import Discrete, Continuous
 
 
 class TestGymEnvironment(object):
@@ -13,6 +13,7 @@ class TestGymEnvironment(object):
 
         env = create_gym("CartPole-v0")
 
+        assert isinstance(env.action_space, Discrete)
         assert np.allclose(env.state_space, np.array(
             [[-4.8,  4.8], [-3.40282347e+38,  3.40282347e+38],
              [-0.419,  0.419], [-3.40282347e+38,  3.40282347e+38]]), atol=1e-3)
@@ -32,6 +33,7 @@ class TestGymEnvironment(object):
 
         env = create_gym("FrozenLake-v0")
 
+        assert isinstance(env.action_space, Discrete)
         assert np.all(env.state_space == 16)
         assert np.all(env.valid_actions == np.array([0, 1, 2, 3]))
         assert env.action_space.num == 4
@@ -49,6 +51,7 @@ class TestGymEnvironment(object):
 
         env = create_gym("MsPacman-v0")
 
+        assert isinstance(env.action_space, Discrete)
         assert np.all(env.state_space.shape == (210, 160, 3, 2))
         assert np.all(env.valid_actions == np.array(range(9)))
         assert env.action_space.num == 9
@@ -66,6 +69,7 @@ class TestGymEnvironment(object):
 
         env = create_gym("Sokoban-v0")
 
+        assert isinstance(env.action_space, Discrete)
         assert np.all(env.state_space.shape == (160, 160, 3, 2))
         assert np.all(env.valid_actions == np.array(range(8)))
         assert env.action_space.num == 8
@@ -82,6 +86,7 @@ class TestGymEnvironment(object):
 
         env = create_gym("MazeEnv-v0")
 
+        assert isinstance(env.action_space, Discrete)
         assert np.all(env.state_space.shape == (21, 21, 2))
         assert np.all(env.valid_actions == np.array(range(4)))
         assert env.action_space.num == 4
@@ -101,7 +106,8 @@ class TestGymEnvironment(object):
 
         assert isinstance(env.action_space, Continuous)
         assert np.all(env.state_space.shape == (2, 2))
-        assert np.all(env.valid_actions == np.array(range(1)))
+        assert isinstance(env.valid_actions, Continuous)
+        assert env.valid_actions == env.action_space
         assert env.action_space.num == 1
 
         state = env.reset()
