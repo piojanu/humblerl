@@ -80,8 +80,7 @@ class Environment(metaclass=ABCMeta):
 
         Returns:
             np.ndarray/Continuous: Discrete env: np.ndarray with enumerated valid actions
-                for current state. Continous env: Action space, since there is no choice
-                of actions and the whole action space is valid.
+                for given state. Continuous env: Valid continuous action space for given state.
         """
 
         pass
@@ -152,7 +151,8 @@ class MDP(metaclass=ABCMeta):
             state (object): MDP's state.
 
         Returns:
-            np.ndarray: Array with enumerated valid actions for given state.
+            np.ndarray/Continuous: Discrete env: np.ndarray with enumerated valid actions
+                for given state. Continuous env: Valid continuous action space for given state.
         """
 
         pass
