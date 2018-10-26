@@ -113,8 +113,7 @@ class GymEnvironment(Environment):
 
         Returns:
             np.ndarray/Continuous: Discrete env: np.ndarray with enumerated valid actions
-                for current state. Continous env: Action space, since there is no choice
-                of actions and the whole action space is valid.
+                for current state. Continous env: Valid continuous action space for current state.
         """
 
         return self._valid_actions
