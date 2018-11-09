@@ -20,7 +20,7 @@ class TabularQLearning(Mind, Callback):
 
     def plan(self, state, train_mode, debug_mode):
         # Decaying over time random noise for exploration
-        random_noise = np.random.randn(self.Q.shape[1]) * (1./self._episode_count)
+        random_noise = np.random.randn(self.Q.shape[1]) * (1. / self._episode_count)
         return self.Q[state] + random_noise
 
     def on_episode_start(self, episode, train_mode):
@@ -34,7 +34,7 @@ class TabularQLearning(Mind, Callback):
         self._return += transition.reward
 
         # Exponentially decaying learning rate
-        LR = pow(self._lr, self._episode_count/self._decay)
+        LR = pow(self._lr, self._episode_count / self._decay)
 
         # Update Q-table
         if transition.is_terminal:

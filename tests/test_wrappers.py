@@ -15,8 +15,8 @@ class TestGymEnvironment(object):
 
         assert isinstance(env.action_space, Discrete)
         assert np.allclose(env.state_space, np.array(
-            [[-4.8,  4.8], [-3.40282347e+38,  3.40282347e+38],
-             [-0.419,  0.419], [-3.40282347e+38,  3.40282347e+38]]), atol=1e-3)
+            [[-4.8, 4.8], [-3.40282347e+38, 3.40282347e+38],
+             [-0.419, 0.419], [-3.40282347e+38, 3.40282347e+38]]), atol=1e-3)
         assert np.all(env.valid_actions == np.array([0, 1]))
         assert env.action_space.num == 2
 
