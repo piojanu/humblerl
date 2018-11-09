@@ -320,7 +320,7 @@ def loop(env, mind, vision=None, n_episodes=1, max_steps=-1, policy='determinist
                     # Finish episode
                     break
 
-    except Exception as err:
+    except BaseException as err:
         # Finish loop when aborted
         log.critical("{}\nSafely terminating loop...".format(err))
         callbacks_list.on_loop_end(True)
