@@ -23,7 +23,7 @@ class Environment(metaclass=ABCMeta):
                 (Default: True)
 
         Returns:
-            object: The initial state. 
+            object: The initial state.
         """
 
         pass

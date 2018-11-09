@@ -43,7 +43,7 @@ class GymEnvironment(Environment):
                 (Default: True)
 
         Returns:
-            np.ndarray: The initial state. 
+            np.ndarray: The initial state.
 
         Note:
             `train_mode` argument is ignored in OpenAI Gym.
