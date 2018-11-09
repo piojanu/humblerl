@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from humblerl import ply, loop, Callback, Environment, Mind, Transition
-from unittest.mock import MagicMock, PropertyMock
+from unittest.mock import MagicMock, Mock, PropertyMock
 
 
 class TestBasicCore(object):
@@ -38,6 +38,13 @@ class TestBasicCore(object):
 
         return mock
 
+    @pytest.fixture
+    def invalid_callback(self):
+        mock = Mock(spec=Callback)
+        mock.on_step_taken.side_efect = BaseException
+
+        return mock
+
     def test_ply(self, env, mind, callback):
         train_mode = True
         debug_mode = False
@@ -63,15 +70,12 @@ class TestBasicCore(object):
         callback.on_episode_end.assert_called_once_with(0, train_mode)
         callback.on_loop_end.assert_called_once_with(False)
 
-    class invalid_callback(Callback):
-        def on_step_taken(self, step, transition, info):
-            a = 1/0
-
-    def test_loop_with_exception(self, env, mind, callback):
+    def test_loop_with_exception_during_execution(self, env, mind, invalid_callback):
         train_mode = False
         handled_exception = False
         try:
-            loop(env, mind, train_mode=train_mode, verbose=0, callbacks=[self.invalid_callback()])
-        except Exception:
+            loop(env, mind, train_mode=train_mode, verbose=0, callbacks=[invalid_callback])
+        except BaseException:
             handled_exception = True
+        invalid_callback.on_loop_end.assert_called_once_with(True)
         assert handled_exception
