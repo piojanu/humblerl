@@ -53,6 +53,22 @@ class Vision(object):
         return self._process_state(state), self._process_reward(reward)
 
 
+class ChainVision:
+    """Chain many vision objects.
+
+    Args:
+        *args: Vision objects to chain calls in order.
+    """
+
+    def __init__(self, *args):
+        self.visions = args
+
+    def __call__(self, state, reward=0.):
+        for vision in self.visions:
+            state, reward = vision(state, reward)
+        return state, reward
+
+
 class RandomAgent(Mind):
     """Mind that acts at random (uniformly)."""
 
