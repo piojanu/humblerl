@@ -13,6 +13,7 @@ class GymEnvironment(Environment):
         """Initialize OpenAI Gym wrapper"""
 
         self.env = env
+        self.step_counter = 0
 
         # Get state space
         obs_space = self.env.observation_space
@@ -50,6 +51,7 @@ class GymEnvironment(Environment):
         """
 
         self._current_state = self.env.reset()
+        self.step_counter = 0
         return self._current_state
 
     def step(self, action):
@@ -67,6 +69,7 @@ class GymEnvironment(Environment):
         """
 
         self._current_state, reward, done, info = self.env.step(action)
+        self.step_counter += 1
         return self._current_state, reward, done, info
 
     def render(self):
