@@ -1,6 +1,6 @@
 import numpy as np
 
-from humblerl import create_gym
+from humblerl import create_gym, QualitativeRewardEnvironment
 from humblerl.environments import Discrete, Continuous
 
 
@@ -117,3 +117,15 @@ class TestGymEnvironment(object):
                        env.sample_action()]:
             state, reward, done, info = env.step(action)
             assert np.all(env.current_state == state)
+
+    def test_qualitative_reward_env(self):
+        """Test for QualitativeRewardEnvironment wrapper.
+        There should be no reward during game and -1/1 reward at the end of game."""
+
+        env = QualitativeRewardEnvironment(create_gym("Sokoban-v0"))
+        env.reset()
+        reward, is_done = 0, False
+        while not is_done:
+            assert reward == 0
+            _, reward, is_done, _ = env.step(env.sample_action())
+        assert reward == -1 or reward == 1
