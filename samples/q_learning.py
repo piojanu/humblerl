@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
     # Create environment and q-learning agent
     env = hrl.create_gym("FrozenLake-v0")
-    mind = TabularQLearning(env.state_space, env.action_space,
+    mind = TabularQLearning(env.state_space, env.action_space.num,
                             learning_rate=args.lr,
                             decay_steps=args.decay,
                             discount_factor=args.gamma)
