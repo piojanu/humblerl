@@ -10,3 +10,4 @@ install:
 script:
   - pytest
   - python samples/cma_es.py --epochs 10 --popsize 50
+  - python samples/q_learning.py
