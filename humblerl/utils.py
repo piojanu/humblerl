@@ -42,7 +42,7 @@ class QualitativeRewardEnvironment(Environment):
 
     @property
     def valid_actions(self):
-        return self.env.valid_actions()
+        return self.env.valid_actions
 
     def step(self, action):
         state, reward, done, info = self.env.step(action)
