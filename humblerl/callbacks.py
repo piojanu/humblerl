@@ -1,10 +1,8 @@
 import csv
-import h5py
 import numpy as np
 import os
-import random
 
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 
 
 class Callback(metaclass=ABCMeta):

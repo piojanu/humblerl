@@ -1,9 +1,7 @@
 # See: https://pip.pypa.io/en/stable/reference/pip_install/#requirements-file-format
 gym[atari] >= 0.9.7
-h5py >= 2.7.1
 numpy >= 1.14.5
 pytest >= 3.3.2
-scipy >= 1.1.0
 tqdm >= 4.23.4
 -e git+https://github.com/mpSchrader/gym-sokoban.git@fae504f015bfbc2ce278b93fdc0ee1d65d456488#egg=gym-sokoban
 -e git+https://github.com/Matioz/gym-maze.git@91f2ba002825404eb950622e1d291dda96371eaa#egg=gym-maze
