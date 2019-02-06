@@ -24,3 +24,17 @@ We are currently working on research project "Transfer Learning in Reinforcement
 
 ## What we are currently working on?
 The most important things now are to improve logging and visualization capabilities, but also add support for more environments. Visualizing and training supervision should be easy-peasy and one should be able to run experiments in many many environments with only minor changes in code! We are waiting for you contribution :smile:
+
+## Citing
+
+If you use `HumbleRL` in your research, you can cite it as follows:
+```bibtex
+@misc{humblerl,
+  author = {Grzegorz Beringer and Mateusz Jablonski and Piotr Januszewski},
+  title = {HumbleRL - Straightforward reinforcement learning Python framework},
+  year = {2019},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  url = {https://github.com/piojanu/humblerl}
+}
+```
