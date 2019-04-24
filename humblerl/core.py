@@ -6,7 +6,7 @@ from collections import namedtuple
 from multiprocessing import Pool
 from tqdm import tqdm
 
-from .agents import Vision
+from .agents import Interpreter
 from .callbacks import CallbackList
 from .utils import History, unpack
 
@@ -15,13 +15,13 @@ Transition = namedtuple(
 
 
 class Worker(metaclass=ABCMeta):
-    """Worker to prepare environment, vision and callbacks for loop.
+    """Worker to prepare environment, interpreter and callbacks for loop.
     Also provides minds factory from jobs."""
 
     @abstractmethod
     def initialize(self):
         """Called once per worker, should create environment and put it in 'self._env' member.
-        Can also provide vision and callbacks for loop. See 'vision' and 'callbacks' properties
+        Can also provide interpreter and callbacks for loop. See 'interpreter' and 'callbacks' properties
         which you need to override."""
 
         pass
@@ -68,18 +68,18 @@ class Worker(metaclass=ABCMeta):
         return []
 
     @property
-    def vision(self):
+    def interpreter(self):
         """This is just a getter.
 
         Returns:
-            Vision: humbler vision used to preprocess states and rewards during evaluation.
+            Interpreter: humbler interpreter used to preprocess states and rewards during evaluation.
 
         Note:
-            Vision should be constructed in 'Worker.initialize()' method.
+            Interpreter should be constructed in 'Worker.initialize()' method.
         """
 
         # By default no preprocessing.
-        return Vision()
+        return Interpreter()
 
 
 def initializer(worker, loop_kwargs):
@@ -93,11 +93,11 @@ def evaluate(job):
     global w, kwargs
 
     return loop(w.environment, w.mind_factory(job),
-                vision=w.vision, callbacks=w.callbacks,
+                interpreter=w.interpreter, callbacks=w.callbacks,
                 **kwargs)
 
 
-def ply(env, mind, policy='deterministic', vision=None, step=0, train_mode=True,
+def ply(env, mind, policy='deterministic', interpreter=None, step=0, train_mode=True,
         debug_mode=False, callbacks=None, **kwargs):
     """Conduct single ply (e.g. step in env or turn taken by one of the players, ...).
 
@@ -105,7 +105,7 @@ def ply(env, mind, policy='deterministic', vision=None, step=0, train_mode=True,
         env (Environment): Environment to take actions in.
         mind (Mind): Mind to use while deciding on action to take in the env.
         policy (string: Describes the way of choosing action from mind predictions (see Note).
-        vision (Vision): State and reward preprocessing. (Default: no preprocessing)
+        interpreter (Interpreter): State and reward preprocessing. (Default: no preprocessing)
         step (int): Current step number in this episode, used by some policies. (Default: 0)
         train_mode (bool): Informs env and planner whether it's in training or evaluation mode.
             (Default: True)
@@ -116,10 +116,10 @@ def ply(env, mind, policy='deterministic', vision=None, step=0, train_mode=True,
 
     Return:
         Transition: Describes transition that took place. It contains:
-          * 'state'        : state from which transition has started (it's preprocessed with Vision),
+          * 'state'        : state from which transition has started (it's preprocessed with Interpreter),
           * 'action'       : action taken (chosen by policy),
-          * 'reward'       : reward obtained (it's preprocessed with Vision),
-          * 'next_state'   : next state observed after transition (it's preprocessed with Vision),
+          * 'reward'       : reward obtained (it's preprocessed with Interpreter),
+          * 'next_state'   : next state observed after transition (it's preprocessed with Interpreter),
           * 'is_terminal'  : flag indication if this is terminal transition (episode end).
 
     Note:
@@ -140,11 +140,11 @@ def ply(env, mind, policy='deterministic', vision=None, step=0, train_mode=True,
     # Create callbacks list
     callbacks_list = CallbackList(callbacks)
 
-    # Create default vision if one wasn't passed
-    vision = vision or Vision()
+    # Create default interpreter if one wasn't passed
+    interpreter = interpreter or Interpreter()
 
     # Get current state (preprocess it)
-    curr_state, _ = vision(env.current_state)
+    curr_state, _ = interpreter(env.current_state)
 
     # Infer what to do
     logits, mind_info = unpack(mind.plan(curr_state, train_mode, debug_mode))
@@ -233,21 +233,21 @@ def ply(env, mind, policy='deterministic', vision=None, step=0, train_mode=True,
     raw_next_state, raw_reward, done, env_info = env.step(action)
 
     # Preprocess data and save in transition
-    next_state, reward = vision(raw_next_state, raw_reward)
+    next_state, reward = interpreter(raw_next_state, raw_reward)
     transition = Transition(curr_state, action, reward, next_state, done)
     callbacks_list.on_step_taken(step, transition, env_info)
 
     return transition
 
 
-def loop(env, mind, vision=None, n_episodes=1, max_steps=-1, policy='deterministic', name="",
+def loop(env, mind, interpreter=None, n_episodes=1, max_steps=-1, policy='deterministic', name="",
          debug_mode=False, render_mode=False, train_mode=True, verbose=2, callbacks=None, **kwargs):
     """Conduct series of plies.
 
     Args:
         env (Environment): Environment to take actions in.
         mind (Mind): Mind to use while deciding on action to take in the environment.
-        vision (Vision): State and reward preprocessing. (Default: no preprocessing)
+        interpreter (Interpreter): State and reward preprocessing. (Default: no preprocessing)
         n_episodes (int): Number of episodes to play. (Default: 1)
         max_steps (int): Maximum number of steps in episode. No limit when -1. (Default: -1)
         policy (string): Describes the way of choosing action from mind predictions
@@ -298,7 +298,7 @@ def loop(env, mind, vision=None, n_episodes=1, max_steps=-1, policy='determinist
 
                 # Play
                 transition = ply(
-                    env, mind, policy, vision, step, train_mode, debug_mode, callbacks, **kwargs)
+                    env, mind, policy, interpreter, step, train_mode, debug_mode, callbacks, **kwargs)
 
                 # Increment step counter
                 step += 1
@@ -335,20 +335,20 @@ def pool(worker, jobs, processes=None, **kwargs):
     """Runs `processes` number of workers which executes jobs (minds instances) in own environments.
 
     Args:
-        worker (Worker): Provides env, vision and callbacks list to each worker. It also implement
+        worker (Worker): Provides env, interpreter and callbacks list to each worker. It also implement
             minds factory. It needs to be picklable.
         jobs (iterable): Jobs (picklable objects) run by workers. Can be e.g. 'range(...)'.
         processes (int or None): Number of workers. If None then taken from 'os.cpu_count()'.
             (Default: None)
         **kwargs: Arguments passed to each 'hrl.loop(...)' execution. Copied to each worker.
-            You shouldn't provide 'vision' and 'callbacks' arguments. Use Factory object for this.
+            You shouldn't provide 'interpreter' and 'callbacks' arguments. Use Factory object for this.
 
     Returns:
         list: History dictionaries from 'humblerl.loop(...)' of each job.
     """
 
-    assert 'vision' not in kwargs and 'callbacks' not in kwargs, \
-        "You shouldn't provide 'vision' and 'callbacks' arguments."
+    assert 'interpreter' not in kwargs and 'callbacks' not in kwargs, \
+        "You shouldn't provide 'interpreter' and 'callbacks' arguments."
 
     with Pool(processes=processes, initializer=initializer, initargs=(worker, kwargs)) as pool:
         return pool.map(evaluate, jobs)
