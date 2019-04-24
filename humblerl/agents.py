@@ -26,14 +26,14 @@ class Mind(metaclass=ABCMeta):
         pass
 
 
-class Vision(object):
-    """Vision system entity in Reinforcement Learning task.
+class Interpreter(object):
+    """Interpreter system entity in Reinforcement Learning task.
 
        It is responsible for e.g. data preprocessing, feature extraction etc.
     """
 
     def __init__(self, state_processor_fn=None, reward_processor_fn=None):
-        """Initialize vision processors.
+        """Initialize interpreter processors.
 
         Args:
             state_processor_fn (callable): Function for state processing. It should
@@ -53,19 +53,19 @@ class Vision(object):
         return self._process_state(state), self._process_reward(reward)
 
 
-class ChainVision:
-    """Chain many vision objects.
+class ChainInterpreter:
+    """Chain many interpreter objects.
 
     Args:
-        *args: Vision objects to chain calls in order.
+        *args: Interpreter objects to chain calls in order.
     """
 
     def __init__(self, *args):
-        self.visions = args
+        self.interpreters = args
 
     def __call__(self, state, reward=0.):
-        for vision in self.visions:
-            state, reward = vision(state, reward)
+        for interpreter in self.interpreters:
+            state, reward = interpreter(state, reward)
         return state, reward
 
 

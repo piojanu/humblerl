@@ -1,4 +1,4 @@
-from .agents import Mind, Vision, ChainVision
+from .agents import Mind, Interpreter, ChainInterpreter
 from .callbacks import Callback, CallbackList
 from .core import Transition, Worker, ply, loop, pool
 from .environments import Environment, MDP
